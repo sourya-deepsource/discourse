@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
 class Admin::ColorSchemesController < Admin::AdminController
-
   before_action :fetch_color_scheme, only: [:update, :destroy]
 
   def index
-    render_serialized(ColorScheme.base_color_schemes + ColorScheme.order('id ASC').all.to_a, ColorSchemeSerializer)
+    render_serialized(ColorScheme.base_color_schemes + ColorScheme.order("id ASC").all.to_a, ColorSchemeSerializer)
   end
 
   def create

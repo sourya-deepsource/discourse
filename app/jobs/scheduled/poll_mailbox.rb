@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'net/pop'
+require "net/pop"
 
 module Jobs
   class PollMailbox < ::Jobs::Scheduled
@@ -45,20 +45,22 @@ module Jobs
     rescue Net::OpenTimeout => e
       count = Discourse.redis.incr(POLL_MAILBOX_TIMEOUT_ERROR_KEY).to_i
 
-      Discourse.redis.expire(
-        POLL_MAILBOX_TIMEOUT_ERROR_KEY,
-        SiteSetting.pop3_polling_period_mins.minutes * 3
-      ) if count == 1
+      if count == 1
+        Discourse.redis.expire(
+          POLL_MAILBOX_TIMEOUT_ERROR_KEY,
+          SiteSetting.pop3_polling_period_mins.minutes * 3
+        )
+      end
 
       if count > 3
         Discourse.redis.del(POLL_MAILBOX_TIMEOUT_ERROR_KEY)
         mark_as_errored!
-        add_admin_dashboard_problem_message('dashboard.poll_pop3_timeout')
+        add_admin_dashboard_problem_message("dashboard.poll_pop3_timeout")
         Discourse.handle_job_exception(e, error_context(@args, "Connecting to '#{SiteSetting.pop3_polling_host}' for polling emails."))
       end
     rescue Net::POPAuthenticationError => e
       mark_as_errored!
-      add_admin_dashboard_problem_message('dashboard.poll_pop3_auth_error')
+      add_admin_dashboard_problem_message("dashboard.poll_pop3_auth_error")
       Discourse.handle_job_exception(e, error_context(@args, "Signing in to poll incoming emails."))
     end
 
@@ -80,6 +82,5 @@ module Jobs
         SiteSetting.pop3_polling_period_mins.minutes + 5.minutes
       )
     end
-
   end
 end

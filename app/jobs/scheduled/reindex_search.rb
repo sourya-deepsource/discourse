@@ -126,14 +126,14 @@ module Jobs
       puts "cleaning up topic search data" if @verbose
 
       DB.exec(<<~SQL, deleted_at: CLEANUP_GRACE_PERIOD)
-      DELETE FROM topic_search_data
-      WHERE topic_id IN (
-        SELECT topic_id
-        FROM topic_search_data
-        INNER JOIN topics ON topic_search_data.topic_id = topics.id
-        WHERE topics.deleted_at IS NOT NULL
-        AND topics.deleted_at <= :deleted_at
-      )
+        DELETE FROM topic_search_data
+        WHERE topic_id IN (
+          SELECT topic_id
+          FROM topic_search_data
+          INNER JOIN topics ON topic_search_data.topic_id = topics.id
+          WHERE topics.deleted_at IS NOT NULL
+          AND topics.deleted_at <= :deleted_at
+        )
       SQL
     end
 
@@ -166,7 +166,7 @@ module Jobs
       Category.joins(:category_search_data)
         .where('category_search_data.locale != ?
                 OR category_search_data.version != ?', SiteSetting.default_locale, SearchIndexer::CATEGORY_INDEX_VERSION)
-        .order('categories.id asc')
+        .order("categories.id asc")
         .limit(limit)
         .pluck(:id)
     end
@@ -175,7 +175,7 @@ module Jobs
       Topic.joins(:topic_search_data)
         .where('topic_search_data.locale != ?
                 OR topic_search_data.version != ?', SiteSetting.default_locale, SearchIndexer::TOPIC_INDEX_VERSION)
-        .order('topics.id desc')
+        .order("topics.id desc")
         .limit(limit)
         .pluck(:id)
     end
@@ -184,7 +184,7 @@ module Jobs
       User.joins(:user_search_data)
         .where('user_search_data.locale != ?
                 OR user_search_data.version != ?', SiteSetting.default_locale, SearchIndexer::USER_INDEX_VERSION)
-        .order('users.id asc')
+        .order("users.id asc")
         .limit(limit)
         .pluck(:id)
     end
@@ -193,7 +193,7 @@ module Jobs
       Tag.joins(:tag_search_data)
         .where('tag_search_data.locale != ?
                 OR tag_search_data.version != ?', SiteSetting.default_locale, SearchIndexer::TAG_INDEX_VERSION)
-        .order('tags.id asc')
+        .order("tags.id asc")
         .limit(limit)
         .pluck(:id)
     end

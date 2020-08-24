@@ -32,7 +32,7 @@ class Admin::WatchedWordsController < Admin::AdminController
         File.open(file.tempfile, encoding: "bom|utf-8").each_line do |line|
           WatchedWord.create_or_update_word(word: line, action_key: action_key) unless line.empty?
         end
-        data = { url: '/ok' }
+        data = {url: "/ok"}
       rescue => e
         data = failed_json.merge(errors: [e.message])
       end
@@ -46,10 +46,10 @@ class Admin::WatchedWordsController < Admin::AdminController
     params.require(:id)
     name = watched_words_params[:id].to_sym
     action = WatchedWord.actions[name]
-    raise Discourse::NotFound if !action
+    raise Discourse::NotFound unless action
 
     content = WatchedWord.where(action: action).pluck(:word).join("\n")
-    headers['Content-Length'] = content.bytesize.to_s
+    headers["Content-Length"] = content.bytesize.to_s
     send_data content,
       filename: "#{Discourse.current_hostname}-watched-words-#{name}.txt",
       content_type: "text/plain"
@@ -59,7 +59,7 @@ class Admin::WatchedWordsController < Admin::AdminController
     params.require(:id)
     name = watched_words_params[:id].to_sym
     action = WatchedWord.actions[name]
-    raise Discourse::NotFound if !action
+    raise Discourse::NotFound unless action
 
     WatchedWord.where(action: action).delete_all
     WordWatcher.clear_cache!
@@ -71,5 +71,4 @@ class Admin::WatchedWordsController < Admin::AdminController
   def watched_words_params
     params.permit(:id, :word, :action_key)
   end
-
 end

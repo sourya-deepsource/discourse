@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-require 'uri'
+
+require "uri"
 
 module Jobs
   class MigrateGroupFlairImages < ::Jobs::Onceoff
@@ -22,7 +23,7 @@ module Jobs
         end
 
         old_url = group[:flair_url]
-        next if old_url.blank? || old_url !~ URI::regexp
+        next if old_url.blank? || old_url !~ URI::DEFAULT_PARSER.make_regexp
 
         group_name = group.name
 
@@ -40,18 +41,18 @@ module Jobs
                 SiteSetting.max_image_size_kb.kilobytes,
                 20.megabytes
               ].max,
-              tmp_file_name: 'tmp_group_flair_upload',
+              tmp_file_name: "tmp_group_flair_upload",
               skip_rate_limit: true,
               follow_redirect: true
             )
           rescue OpenURI::HTTPError,
-                 OpenSSL::SSL::SSLError,
-                 Net::OpenTimeout,
-                 Net::ReadTimeout,
-                 Errno::ECONNREFUSED,
-                 EOFError,
-                 SocketError,
-                 Discourse::InvalidParameters => e
+            OpenSSL::SSL::SSLError,
+            Net::OpenTimeout,
+            Net::ReadTimeout,
+            Errno::ECONNREFUSED,
+            EOFError,
+            SocketError,
+            Discourse::InvalidParameters => e
 
             logger.warn(
               "Error encountered when trying to download from URL '#{old_url}' " +

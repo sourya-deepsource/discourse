@@ -6,7 +6,7 @@ class ForumsController < ActionController::Base
   include ReadOnlyHeader
 
   before_action :check_readonly_mode
-  after_action  :add_readonly_header
+  after_action :add_readonly_header
 
   def status
     if $shutdown # rubocop:disable Style/GlobalVars
@@ -15,5 +15,4 @@ class ForumsController < ActionController::Base
       render plain: "ok"
     end
   end
-
 end

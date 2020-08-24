@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class CategoriesController < ApplicationController
-
   requires_login except: [:index, :categories_and_latest, :categories_and_top, :show, :redirect, :find_by_slug]
 
   before_action :fetch_category, only: [:show, :update, :destroy]
@@ -34,7 +33,7 @@ class CategoriesController < ApplicationController
     if category_options[:is_homepage] && SiteSetting.short_site_description.present?
       @title = "#{SiteSetting.title} - #{SiteSetting.short_site_description}"
     elsif !category_options[:is_homepage]
-      @title = "#{I18n.t('js.filters.categories.title')} - #{SiteSetting.title}"
+      @title = "#{I18n.t("js.filters.categories.title")} - #{SiteSetting.title}"
     end
 
     respond_to do |format|
@@ -127,7 +126,7 @@ class CategoriesController < ApplicationController
       begin
         Category.new(required_create_params.merge(user: current_user))
       rescue ArgumentError => e
-        return render json: { errors: [e.message] }, status: 422
+        return render json: {errors: [e.message]}, status: 422
       end
 
     if @category.save
@@ -147,7 +146,6 @@ class CategoriesController < ApplicationController
     guardian.ensure_can_edit!(@category)
 
     json_result(@category, serializer: CategorySerializer) do |cat|
-
       cat.move_to(category_params[:position].to_i) if category_params[:position]
       category_params.delete(:position)
 
@@ -174,7 +172,7 @@ class CategoriesController < ApplicationController
     custom_slug = params[:slug].to_s
 
     if custom_slug.blank?
-      error = @category.errors.full_message(:slug, I18n.t('errors.messages.blank'))
+      error = @category.errors.full_message(:slug, I18n.t("errors.messages.blank"))
       render_json_error(error)
     elsif @category.update(slug: custom_slug)
       render json: success_json
@@ -208,12 +206,12 @@ class CategoriesController < ApplicationController
 
     raise Discourse::NotFound unless @category.present?
 
-    if !guardian.can_see?(@category)
+    unless guardian.can_see?(@category)
       if SiteSetting.detailed_404 && group = @category.access_category_via_group
         raise Discourse::InvalidAccess.new(
-          'not in group',
+          "not in group",
           @category,
-          custom_message: 'not_in_group.title_category',
+          custom_message: "not_in_group.title_category",
           group: group
         )
       else
@@ -287,7 +285,7 @@ class CategoriesController < ApplicationController
       if SiteSetting.tagging_enabled
         params[:allowed_tags] ||= []
         params[:allowed_tag_groups] ||= []
-        params[:required_tag_group_name] ||= ''
+        params[:required_tag_group_name] ||= ""
       end
 
       result = params.permit(
@@ -349,7 +347,7 @@ class CategoriesController < ApplicationController
     style = SiteSetting.desktop_category_page_style
     view_context.mobile_view? ||
       params[:include_topics] ||
-      (parent_category && parent_category.subcategory_list_includes_topics?) ||
+      parent_category&.subcategory_list_includes_topics? ||
       style == "categories_with_featured_topics" ||
       style == "categories_boxes_with_topics" ||
       style == "categories_with_top_topics"

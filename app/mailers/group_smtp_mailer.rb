@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-require_dependency 'email/message_builder'
+require_dependency "email/message_builder"
 
 class GroupSmtpMailer < ActionMailer::Base
   include Email::BuildEmailHelper
 
   def send_mail(from_group, to_address, post)
-    raise 'SMTP is disabled' if !SiteSetting.enable_smtp
+    raise "SMTP is disabled" unless SiteSetting.enable_smtp
 
     incoming_email = IncomingEmail.joins(:post)
-      .where('imap_uid IS NOT NULL')
-      .where(topic_id: post.topic_id, posts: { post_number: 1 })
+      .where("imap_uid IS NOT NULL")
+      .where(topic_id: post.topic_id, posts: {post_number: 1})
       .limit(1).first
 
     context_posts = Post
@@ -26,7 +26,7 @@ class GroupSmtpMailer < ActionMailer::Base
     delivery_options = {
       address: from_group.smtp_server,
       port: from_group.smtp_port,
-      domain: from_group.email_username.split('@').last,
+      domain: from_group.email_username.split("@").last,
       user_name: from_group.email_username,
       password: from_group.email_password,
       authentication: GlobalSetting.smtp_authentication,
@@ -51,16 +51,15 @@ class GroupSmtpMailer < ActionMailer::Base
       private_reply: post.topic.private_message?,
       participants: participants(post),
       include_respond_instructions: true,
-      template: 'user_notifications.user_posted_pm',
+      template: "user_notifications.user_posted_pm",
       use_topic_title_subject: true,
       topic_title: incoming_email&.subject || post.topic.title,
       add_re_to_subject: true,
       locale: SiteSetting.default_locale,
       delivery_method_options: delivery_options,
       from: from_group.email_username,
-      from_alias: I18n.t('email_from', user_name: user_name, site_name: Email.site_title),
-      html_override: html_override(post, context_posts: context_posts)
-    )
+      from_alias: I18n.t("email_from", user_name: user_name, site_name: Email.site_title),
+      html_override: html_override(post, context_posts: context_posts))
   end
 
   private
@@ -71,7 +70,7 @@ class GroupSmtpMailer < ActionMailer::Base
     context = +""
 
     if context_posts.size > 0
-      context << +"-- \n*#{I18n.t('user_notifications.previous_discussion')}*\n"
+      context << +"-- \n*#{I18n.t("user_notifications.previous_discussion")}*\n"
       context_posts.each { |post| context << email_post_markdown(post, true) }
     end
 
@@ -81,7 +80,7 @@ class GroupSmtpMailer < ActionMailer::Base
   def email_post_markdown(post, add_posted_by = false)
     result = +"#{post.with_secure_media? ? strip_secure_urls(post.raw) : post.raw}\n\n"
     if add_posted_by
-      result << "#{I18n.t('user_notifications.posted_by', username: post.username, post_date: post.created_at.strftime("%m/%d/%Y"))}\n\n"
+      result << "#{I18n.t("user_notifications.posted_by", username: post.username, post_date: post.created_at.strftime("%m/%d/%Y"))}\n\n"
     end
     result
   end
@@ -91,7 +90,7 @@ class GroupSmtpMailer < ActionMailer::Base
     raw.scan(Discourse::Utils::URI_REGEXP) { urls << $& }
 
     urls.each do |url|
-      if (url.start_with?(Discourse.store.s3_upload_host) && FileHelper.is_supported_media?(url))
+      if url.start_with?(Discourse.store.s3_upload_host) && FileHelper.is_supported_media?(url)
         raw = raw.sub(url, "<p class='secure-media-notice'>#{I18n.t("emails.secure_media_placeholder")}</p>")
       end
     end
@@ -101,7 +100,7 @@ class GroupSmtpMailer < ActionMailer::Base
 
   def html_override(post, context_posts: nil)
     UserNotificationRenderer.render(
-      template: 'email/notification',
+      template: "email/notification",
       format: :html,
       locals: {
         context_posts: context_posts,
@@ -109,7 +108,7 @@ class GroupSmtpMailer < ActionMailer::Base
         post: post,
         in_reply_to_post: post.reply_to_post,
         classes: Rtl.new(nil).css_class,
-        first_footer_classes: ''
+        first_footer_classes: ""
       }
     )
   end
@@ -129,6 +128,6 @@ class GroupSmtpMailer < ActionMailer::Base
       end
     end
 
-    list.join(', ')
+    list.join(", ")
   end
 end

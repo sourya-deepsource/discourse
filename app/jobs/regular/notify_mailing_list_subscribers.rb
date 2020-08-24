@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class NotifyMailingListSubscribers < ::Jobs::Base
     include Skippable
 
     RETRY_TIMES = [5.minute, 15.minute, 30.minute, 45.minute, 90.minute, 180.minute, 300.minute]
 
-    sidekiq_options queue: 'low'
+    sidekiq_options queue: "low"
 
     sidekiq_options retry: RETRY_TIMES.size
 
@@ -29,25 +28,25 @@ module Jobs
       return if !post || post.trashed? || post.user_deleted? || !post.topic
 
       users =
-          User.activated.not_silenced.not_suspended.real
-            .joins(:user_option)
-            .where('user_options.mailing_list_mode AND user_options.mailing_list_mode_frequency > 0')
-            .where('NOT EXISTS (
+        User.activated.not_silenced.not_suspended.real
+          .joins(:user_option)
+          .where("user_options.mailing_list_mode AND user_options.mailing_list_mode_frequency > 0")
+          .where('NOT EXISTS (
                       SELECT 1
                       FROM muted_users mu
                       WHERE mu.muted_user_id = ? AND mu.user_id = users.id
                   )', post.user_id)
-            .where('NOT EXISTS (
+          .where('NOT EXISTS (
                       SELECT 1
                       FROM ignored_users iu
                       WHERE iu.ignored_user_id = ? AND iu.user_id = users.id
                   )', post.user_id)
-            .where('NOT EXISTS (
+          .where('NOT EXISTS (
                       SELECT 1
                       FROM topic_users tu
                       WHERE tu.topic_id = ? AND tu.user_id = users.id AND tu.notification_level = ?
                   )', post.topic_id, TopicUser.notification_levels[:muted])
-            .where('NOT EXISTS (
+          .where('NOT EXISTS (
                      SELECT 1
                      FROM category_users cu
                      WHERE cu.category_id = ? AND cu.user_id = users.id AND cu.notification_level = ?
@@ -70,24 +69,21 @@ module Jobs
         if Guardian.new(user).can_see?(post)
           if EmailLog.reached_max_emails?(user)
             skip(user.email, user.id, post.id,
-              SkippedEmailLog.reason_types[:exceeded_emails_limit]
-            )
+              SkippedEmailLog.reason_types[:exceeded_emails_limit])
 
             next
           end
 
           if user.user_stat.bounce_score >= SiteSetting.bounce_score_threshold
             skip(user.email, user.id, post.id,
-              SkippedEmailLog.reason_types[:exceeded_bounces_limit]
-            )
+              SkippedEmailLog.reason_types[:exceeded_bounces_limit])
 
             next
           end
 
           if (user.id == post.user_id) && (user.user_option.mailing_list_mode_frequency == 2)
             skip(user.email, user.id, post.id,
-              SkippedEmailLog.reason_types[:mailing_list_no_echo_mode]
-            )
+              SkippedEmailLog.reason_types[:mailing_list_no_echo_mode])
 
             next
           end
@@ -103,12 +99,11 @@ module Jobs
           end
         end
       end
-
     end
 
     def skip(to_address, user_id, post_id, reason_type)
       create_skipped_email_log(
-        email_type: 'mailing_list',
+        email_type: "mailing_list",
         to_address: to_address,
         user_id: user_id,
         post_id: post_id,

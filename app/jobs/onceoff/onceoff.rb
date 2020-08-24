@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require_relative '../base.rb'
+require_relative "../base.rb"
 
 class Jobs::Onceoff < ::Jobs::Base
   sidekiq_options retry: false
 
   def self.name_for(klass)
-    klass.name.sub(/^Jobs\:\:/, '')
+    klass.name.sub(/^Jobs::/, "")
   end
 
   def running_key_name
@@ -28,7 +28,6 @@ class Jobs::Onceoff < ::Jobs::Base
         Discourse.redis.del(running_key_name) if has_lock
       end
     end
-
   end
 
   def self.enqueue_all
@@ -41,5 +40,4 @@ class Jobs::Onceoff < ::Jobs::Base
       end
     end
   end
-
 end

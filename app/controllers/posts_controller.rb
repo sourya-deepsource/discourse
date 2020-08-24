@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class PostsController < ApplicationController
-
   requires_login except: [
     :show,
     :replies,
@@ -58,8 +57,8 @@ class PostsController < ApplicationController
       raise Discourse::NotFound if current_user.nil?
       posts = Post.private_posts
         .order(created_at: :desc)
-        .where('posts.id <= ?', last_post_id)
-        .where('posts.id > ?', last_post_id - 50)
+        .where("posts.id <= ?", last_post_id)
+        .where("posts.id > ?", last_post_id - 50)
         .includes(topic: :category)
         .includes(user: :primary_group)
         .includes(:reply_to_user)
@@ -68,8 +67,8 @@ class PostsController < ApplicationController
     else
       posts = Post.public_posts
         .order(created_at: :desc)
-        .where('posts.id <= ?', last_post_id)
-        .where('posts.id > ?', last_post_id - 50)
+        .where("posts.id <= ?", last_post_id)
+        .where("posts.id > ?", last_post_id - 50)
         .includes(topic: :category)
         .includes(user: :primary_group)
         .includes(:reply_to_user)
@@ -88,17 +87,16 @@ class PostsController < ApplicationController
         @title = "#{SiteSetting.title} - #{rss_description}"
         @link = Discourse.base_url
         @description = rss_description
-        render 'posts/latest', formats: [:rss]
+        render "posts/latest", formats: [:rss]
       end
       format.json do
         render_json_dump(serialize_data(posts,
-                                        PostSerializer,
-                                        scope: guardian,
-                                        root: params[:id],
-                                        add_raw: true,
-                                        add_title: true,
-                                        all_post_actions: counts)
-                                      )
+          PostSerializer,
+          scope: guardian,
+          root: params[:id],
+          add_raw: true,
+          add_title: true,
+          all_post_actions: counts))
       end
     end
   end
@@ -124,22 +122,20 @@ class PostsController < ApplicationController
         @title = "#{SiteSetting.title} - #{I18n.t("rss_description.user_posts", username: user.username)}"
         @link = "#{Discourse.base_url}/u/#{user.username}/activity"
         @description = I18n.t("rss_description.user_posts", username: user.username)
-        render 'posts/latest', formats: [:rss]
+        render "posts/latest", formats: [:rss]
       end
 
       format.json do
         render_json_dump(serialize_data(posts,
-                                        PostSerializer,
-                                        scope: guardian,
-                                        add_excerpt: true)
-                                      )
+          PostSerializer,
+          scope: guardian,
+          add_excerpt: true))
       end
     end
-
   end
 
   def cooked
-    render json: { cooked: find_post_from_params.cooked }
+    render json: {cooked: find_post_from_params.cooked}
   end
 
   def raw_email
@@ -147,7 +143,7 @@ class PostsController < ApplicationController
     post = Post.unscoped.find(params[:id].to_i)
     guardian.ensure_can_view_raw_email!(post)
     text, html = Email.extract_parts(post.raw_email)
-    render json: { raw_email: post.raw_email, text_part: text, html_part: html }
+    render json: {raw_email: post.raw_email, text_part: text, html_part: html}
   end
 
   def short_link
@@ -155,7 +151,7 @@ class PostsController < ApplicationController
     # Stuff the user in the request object, because that's what IncomingLink wants
     if params[:user_id]
       user = User.find(params[:user_id].to_i)
-      request['u'] = user.username_lower if user
+      request["u"] = user.username_lower if user
     end
 
     guardian.ensure_can_see!(post)
@@ -169,13 +165,13 @@ class PostsController < ApplicationController
     manager = NewPostManager.new(current_user, @manager_params)
 
     if is_api?
-      memoized_payload = DistributedMemoizer.memoize(signature_for(@manager_params), 120) do
+      memoized_payload = DistributedMemoizer.memoize(signature_for(@manager_params), 120) {
         result = manager.perform
         MultiJson.dump(serialize_data(result, NewPostResultSerializer, root: false))
-      end
+      }
 
       parsed_payload = JSON.parse(memoized_payload)
-      backwards_compatible_json(parsed_payload, parsed_payload['success'])
+      backwards_compatible_json(parsed_payload, parsed_payload["success"])
     else
       result = manager.perform
       json = serialize_data(result, NewPostResultSerializer, root: false)
@@ -195,10 +191,10 @@ class PostsController < ApplicationController
     post.image_sizes = params[:image_sizes] if params[:image_sizes].present?
 
     if !guardian.public_send("can_edit?", post) &&
-       post.user_id == current_user.id &&
-       post.edit_time_limit_expired?(current_user)
+        post.user_id == current_user.id &&
+        post.edit_time_limit_expired?(current_user)
 
-      return render_json_error(I18n.t('too_late_to_edit'))
+      return render_json_error(I18n.t("too_late_to_edit"))
     end
 
     guardian.ensure_can_edit!(post)
@@ -210,7 +206,7 @@ class PostsController < ApplicationController
 
     raw_old = params[:post][:raw_old]
     if raw_old.present? && raw_old != post.raw
-      return render_json_error(I18n.t('edit_conflict'), status: 409)
+      return render_json_error(I18n.t("edit_conflict"), status: 409)
     end
 
     # to stay consistent with the create api, we allow for title & category changes here
@@ -223,7 +219,7 @@ class PostsController < ApplicationController
         if category || (changes[:category_id].to_i == 0)
           guardian.ensure_can_move_topic_to_category!(category)
         else
-          return render_json_error(I18n.t('category.errors.not_found'))
+          return render_json_error(I18n.t("category.errors.not_found"))
         end
       end
     end
@@ -248,7 +244,7 @@ class PostsController < ApplicationController
     link_counts = TopicLink.counts_for(guardian, topic, [post])
     post_serializer.single_post_link_counts = link_counts[post.id] if link_counts.present?
 
-    result = { post: post_serializer.as_json }
+    result = {post: post_serializer.as_json}
     if revisor.category_changed.present?
       result[:category] = BasicCategorySerializer.new(revisor.category_changed, scope: guardian, root: false).as_json
     end
@@ -313,9 +309,9 @@ class PostsController < ApplicationController
   end
 
   def expand_embed
-    render json: { cooked: TopicEmbed.expanded_for(find_post_from_params) }
+    render json: {cooked: TopicEmbed.expanded_for(find_post_from_params)}
   rescue
-    render_json_error I18n.t('errors.embed.load_from_remote')
+    render_json_error I18n.t("errors.embed.load_from_remote")
   end
 
   def recover
@@ -432,7 +428,7 @@ class PostsController < ApplicationController
     post_revision.post = post
     guardian.ensure_can_see!(post_revision)
     guardian.ensure_can_edit!(post)
-    return render_json_error(I18n.t('revert_version_same')) if post_revision.modifications["raw"].blank? && post_revision.modifications["title"].blank? && post_revision.modifications["category_id"].blank?
+    return render_json_error(I18n.t("revert_version_same")) if post_revision.modifications["raw"].blank? && post_revision.modifications["title"].blank? && post_revision.modifications["category_id"].blank?
 
     topic = Topic.with_deleted.find(post.topic_id)
 
@@ -442,7 +438,7 @@ class PostsController < ApplicationController
       changes[:title] = post_revision.modifications["title"][0] if post_revision.modifications["title"].present? && post_revision.modifications["title"][0] != topic.title
       changes[:category_id] = post_revision.modifications["category_id"][0] if post_revision.modifications["category_id"].present? && post_revision.modifications["category_id"][0] != topic.category.id
     end
-    return render_json_error(I18n.t('revert_version_same')) unless changes.length > 0
+    return render_json_error(I18n.t("revert_version_same")) unless changes.length > 0
     changes[:edit_reason] = "reverted to version ##{post_revision.number.to_i - 1}"
 
     revisor = PostRevisor.new(post, topic)
@@ -457,7 +453,7 @@ class PostsController < ApplicationController
     link_counts = TopicLink.counts_for(guardian, topic, [post])
     post_serializer.single_post_link_counts = link_counts[post.id] if link_counts.present?
 
-    result = { post: post_serializer.as_json }
+    result = {post: post_serializer.as_json}
     if post.is_first_post?
       result[:topic] = BasicTopicSerializer.new(topic, scope: guardian, root: false).as_json if post_revision.modifications["title"].present?
       result[:category_id] = post_revision.modifications["category_id"][0] if post_revision.modifications["category_id"].present?
@@ -481,13 +477,13 @@ class PostsController < ApplicationController
 
     if params[:notice].present?
       post.custom_fields[Post::NOTICE_TYPE] = Post.notices[:custom]
-      post.custom_fields[Post::NOTICE_ARGS] = PrettyText.cook(params[:notice], features: { onebox: false })
+      post.custom_fields[Post::NOTICE_ARGS] = PrettyText.cook(params[:notice], features: {onebox: false})
       post.save_custom_fields
     else
       post.delete_post_notices
     end
 
-    details = { new_raw_value: params[:notice], old_value: previous_notice }
+    details = {new_raw_value: params[:notice], old_value: previous_notice}
     StaffActionLogger.new(current_user).log_post_staff_note(post, details)
 
     render body: nil
@@ -583,7 +579,7 @@ class PostsController < ApplicationController
       Rails.logger.error "Error creating post via API:\n\n#{json_obj.inspect}"
     end
 
-    render json: json_obj, status: (!!success) ? 200 : 422
+    render json: json_obj, status: !!success ? 200 : 422
   end
 
   def find_post_revision_from_params
@@ -644,7 +640,7 @@ class PostsController < ApplicationController
       # Awful hack, but you can't seem to remove the `default_scope` when joining
       # So instead I grab the topics separately
       topic_ids = posts.dup.pluck(:topic_id)
-      topics = Topic.where(id: topic_ids).with_deleted.where.not(archetype: 'private_message')
+      topics = Topic.where(id: topic_ids).with_deleted.where.not(archetype: "private_message")
       topics = topics.secured(guardian)
 
       posts = posts.where(topic_id: topics.pluck(:id))
@@ -673,13 +669,13 @@ class PostsController < ApplicationController
 
     Post.plugin_permitted_create_params.each do |key, value|
       if value[:plugin].enabled?
-        permitted <<  case value[:type]
+        permitted << case value[:type]
                       when :string
                         key.to_sym
                       when :array
-                        { key => [] }
+                        {key => []}
                       when :hash
-                        { key => {} }
+                        {key => {}}
         end
       end
     end
@@ -723,7 +719,7 @@ class PostsController < ApplicationController
       result[:no_bump] = true
     end
 
-    if params[:shared_draft] == 'true'
+    if params[:shared_draft] == "true"
       raise Discourse::InvalidParameters.new(:shared_draft) unless guardian.can_create_shared_draft?
 
       result[:shared_draft] = true
@@ -753,7 +749,7 @@ class PostsController < ApplicationController
 
     if recipients
       recipients = recipients.split(",").map(&:downcase)
-      groups = Group.messageable(current_user).where('lower(name) in (?)', recipients).pluck('lower(name)')
+      groups = Group.messageable(current_user).where("lower(name) in (?)", recipients).pluck("lower(name)")
       recipients -= groups
       emails = recipients.select { |user| user.match(/@/) }
       recipients -= emails
@@ -771,9 +767,9 @@ class PostsController < ApplicationController
       .to_h
       .to_a
       .concat([["user", current_user.id]])
-      .sort { |x, y| x[0] <=> y[0] }.join do |x, y|
+      .sort_by { |a| a[0] }.join { |x, y|
         "#{x}:#{y}"
-      end)
+      })
   end
 
   def display_post(post)
@@ -814,5 +810,4 @@ class PostsController < ApplicationController
     guardian.ensure_can_see!(post)
     post
   end
-
 end

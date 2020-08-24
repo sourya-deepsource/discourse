@@ -1,16 +1,13 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class EnsureS3UploadsExistence < ::Jobs::Scheduled
     every 1.day
 
     def perform(*args)
       super
     ensure
-      if @db_inventories
-        @db_inventories.values.each { |f| f.close; f.unlink }
-      end
+      @db_inventories&.values&.each { |f| f.close; f.unlink }
     end
 
     def s3_helper
@@ -25,7 +22,7 @@ module Jobs
 
     def execute(args)
       return unless SiteSetting.enable_s3_inventory
-      require 's3_inventory'
+      require "s3_inventory"
 
       if !@db_inventories && Rails.configuration.multisite && GlobalSetting.use_s3?
         prepare_for_all_sites

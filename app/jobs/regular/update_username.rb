@@ -2,8 +2,7 @@
 
 module Jobs
   class UpdateUsername < ::Jobs::Base
-
-    sidekiq_options queue: 'low'
+    sidekiq_options queue: "low"
 
     def execute(args)
       @user_id = args[:user_id]
@@ -23,7 +22,7 @@ module Jobs
         )
       /ix
 
-      @raw_quote_regex = /(\[quote\s*=\s*["'']?)#{@old_username}(\,?[^\]]*\])/i
+      @raw_quote_regex = /(\[quote\s*=\s*["'']?)#{@old_username}(,?[^\]]*\])/i
 
       cooked_username = PrettyText::Helpers.format_username(@old_username)
       @cooked_mention_username_regex = /^@#{cooked_username}$/i
@@ -46,7 +45,6 @@ module Jobs
         .joins(mentioned("posts.id"))
         .where("a.user_id = :user_id", user_id: @user_id)
         .find_each do |post|
-
         update_post(post)
         updated_post_ids << post.id
       end

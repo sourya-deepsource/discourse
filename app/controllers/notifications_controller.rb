@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class NotificationsController < ApplicationController
-
   requires_login
   before_action :ensure_admin, only: [:create, :update, :destroy]
   before_action :set_notification, only: [:update, :destroy]
@@ -10,7 +9,7 @@ class NotificationsController < ApplicationController
     user =
       if params[:username] && !params[:recent]
         user_record = User.find_by(username: params[:username].to_s)
-        raise Discourse::NotFound if !user_record
+        raise Discourse::NotFound unless user_record
         user_record
       else
         current_user
@@ -55,7 +54,6 @@ class NotificationsController < ApplicationController
                        seen_notification_id: user.seen_notification_id,
                        load_more_notifications: notifications_path(username: user.username, offset: offset + 60, filter: params[:filter]))
     end
-
   end
 
   def mark_read
@@ -100,5 +98,4 @@ class NotificationsController < ApplicationController
   def render_notification
     render_json_dump(NotificationSerializer.new(@notification, scope: guardian, root: false))
   end
-
 end

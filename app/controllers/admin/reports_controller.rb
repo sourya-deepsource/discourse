@@ -2,16 +2,16 @@
 
 class Admin::ReportsController < Admin::AdminController
   def index
-    reports_methods = ['page_view_total_reqs'] +
+    reports_methods = ["page_view_total_reqs"] +
       ApplicationRequest.req_types.keys
         .select { |r| r =~ /^page_view_/ && r !~ /mobile/ }
         .map { |r| r + "_reqs" } +
       Report.singleton_methods.grep(/^report_(?!about|storage_stats)/)
 
-    reports = reports_methods.map do |name|
-      type = name.to_s.gsub('report_', '')
-      description = I18n.t("reports.#{type}.description", default: '')
-      description_link = I18n.t("reports.#{type}.description_link", default: '')
+    reports = reports_methods.map { |name|
+      type = name.to_s.gsub("report_", "")
+      description = I18n.t("reports.#{type}.description", default: "")
+      description_link = I18n.t("reports.#{type}.description_link", default: "")
 
       {
         type: type,
@@ -19,7 +19,7 @@ class Admin::ReportsController < Admin::AdminController
         description: description.presence ? description : nil,
         description_link: description_link.presence ? description_link : nil
       }
-    end
+    }
 
     render_json_dump(reports: reports.sort_by { |report| report[:title] })
   end
@@ -32,7 +32,7 @@ class Admin::ReportsController < Admin::AdminController
         args = parse_params(report_params)
 
         report = nil
-        if (report_params[:cache])
+        if report_params[:cache]
           report = Report.find_cached(report_type, args)
         end
 
@@ -61,12 +61,12 @@ class Admin::ReportsController < Admin::AdminController
   def show
     report_type = params[:type]
 
-    raise Discourse::NotFound unless report_type =~ /^[a-z0-9\_]+$/
+    raise Discourse::NotFound unless /^[a-z0-9_]+$/.match?(report_type)
 
     args = parse_params(params)
 
     report = nil
-    if (params[:cache])
+    if params[:cache]
       report = Report.find_cached(report_type, args)
     end
 
@@ -79,7 +79,7 @@ class Admin::ReportsController < Admin::AdminController
 
       raise Discourse::NotFound if report.blank?
 
-      if (params[:cache])
+      if params[:cache]
         Report.cache(report, 35.minutes)
       end
 

@@ -27,8 +27,8 @@ module Jobs
 
       # Any URLs in site settings are fair game
       ignore_urls = [
-        *SiteSetting.selectable_avatars.split("\n"),
-      ].flatten.map do |url|
+        *SiteSetting.selectable_avatars.split("\n")
+      ].flatten.map { |url|
         if url.present?
           url = url.dup
 
@@ -37,10 +37,8 @@ module Jobs
           end
 
           url[base_url] && url[url.index(base_url)..-1]
-        else
-          nil
         end
-      end.compact.uniq
+      }.compact.uniq
 
       result = Upload.by_users
         .where("uploads.retain_hours IS NULL OR uploads.created_at < current_timestamp - interval '1 hour' * uploads.retain_hours")
@@ -105,6 +103,5 @@ module Jobs
     def last_cleanup_key
       "LAST_UPLOAD_CLEANUP"
     end
-
   end
 end

@@ -24,19 +24,19 @@ module Jobs
     private
 
     def old_site_settings_keys
-      @old_site_settings_keys ||= SiteSetting.secret_settings.each_with_object([]) do |secret_name, old_keys|
+      @old_site_settings_keys ||= SiteSetting.secret_settings.each_with_object([]) { |secret_name, old_keys|
         site_setting = SiteSetting.find_by(name: secret_name)
         next if site_setting&.value.blank?
         next if site_setting.updated_at + OLD_CREDENTIALS_PERIOD > Time.zone.now
         old_keys << site_setting
-      end.sort_by { |key| key.updated_at }
+      }.sort_by { |key| key.updated_at }
     end
 
     def old_api_keys
-      @old_api_keys ||= ApiKey.all.order(created_at: :asc).each_with_object([]) do |api_key, old_keys|
+      @old_api_keys ||= ApiKey.all.order(created_at: :asc).each_with_object([]) { |api_key, old_keys|
         next if api_key.created_at + OLD_CREDENTIALS_PERIOD > Time.zone.now
         old_keys << api_key
-      end
+      }
     end
 
     def admins
@@ -49,16 +49,16 @@ module Jobs
     end
 
     def title
-      I18n.t('old_keys_reminder.title')
+      I18n.t("old_keys_reminder.title")
     end
 
     def body
-      I18n.t('old_keys_reminder.body', keys: keys_list)
+      I18n.t("old_keys_reminder.body", keys: keys_list)
     end
 
     def keys_list
       messages = old_site_settings_keys.map { |key| "#{key.name} - #{key.updated_at.to_date.to_s(:db)}" }
-      old_api_keys.each_with_object(messages) { |key, array| array << "#{[key.description, key.user&.username, key.created_at.to_date.to_s(:db)].compact.join(" - ")}" }
+      old_api_keys.each_with_object(messages) { |key, array| array << [key.description, key.user&.username, key.created_at.to_date.to_s(:db)].compact.join(" - ").to_s }
       messages.join("\n")
     end
   end

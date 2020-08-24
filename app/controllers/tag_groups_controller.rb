@@ -8,8 +8,8 @@ class TagGroupsController < ApplicationController
   before_action :fetch_tag_group, only: [:show, :update, :destroy]
 
   def index
-    tag_groups = TagGroup.order('name ASC').includes(:parent_tag).preload(:tags).all
-    serializer = ActiveModel::ArraySerializer.new(tag_groups, each_serializer: TagGroupSerializer, root: 'tag_groups')
+    tag_groups = TagGroup.order("name ASC").includes(:parent_tag).preload(:tags).all
+    serializer = ActiveModel::ArraySerializer.new(tag_groups, each_serializer: TagGroupSerializer, root: "tag_groups")
     respond_to do |format|
       format.html do
         store_preloaded "tagGroups", MultiJson.dump(serializer)
@@ -31,8 +31,8 @@ class TagGroupsController < ApplicationController
   end
 
   def new
-    tag_groups = TagGroup.order('name ASC').includes(:parent_tag).preload(:tags).all
-    serializer = ActiveModel::ArraySerializer.new(tag_groups, each_serializer: TagGroupSerializer, root: 'tag_groups')
+    tag_groups = TagGroup.order("name ASC").includes(:parent_tag).preload(:tags).all
+    serializer = ActiveModel::ArraySerializer.new(tag_groups, each_serializer: TagGroupSerializer, root: "tag_groups")
     store_preloaded "tagGroup", MultiJson.dump(serializer)
     render "default/empty"
   end
@@ -62,14 +62,14 @@ class TagGroupsController < ApplicationController
 
   def search
     matches = if params[:q].present?
-      TagGroup.where('lower(name) ILIKE ?', "%#{params[:q].strip}%")
+      TagGroup.where("lower(name) ILIKE ?", "%#{params[:q].strip}%")
     else
       TagGroup.all
     end
 
-    matches = matches.order('name').limit(params[:limit] || 5)
+    matches = matches.order("name").limit(params[:limit] || 5)
 
-    render json: { results: matches.map { |x| { id: x.name, text: x.name } } }
+    render json: {results: matches.map { |x| {id: x.name, text: x.name} }}
   end
 
   private
@@ -94,7 +94,7 @@ class TagGroupsController < ApplicationController
       :one_per_topic,
       tag_names: [],
       parent_tag_name: [],
-      permissions: permissions&.keys,
+      permissions: permissions&.keys
     )
 
     result[:tag_names] ||= []

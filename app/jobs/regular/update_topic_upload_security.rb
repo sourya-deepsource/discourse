@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class UpdateTopicUploadSecurity < ::Jobs::Base
-
     def execute(args)
       topic = Topic.find_by(id: args[:topic_id])
       if topic.blank?

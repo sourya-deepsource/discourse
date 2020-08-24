@@ -6,7 +6,7 @@ class HashtagsController < ApplicationController
   HASHTAGS_PER_REQUEST = 20
 
   def show
-    raise Discourse::InvalidParameters.new(:slugs) if !params[:slugs].is_a?(Array)
+    raise Discourse::InvalidParameters.new(:slugs) unless params[:slugs].is_a?(Array)
 
     all_slugs = []
     tag_slugs = []
@@ -43,6 +43,6 @@ class HashtagsController < ApplicationController
       end
     end
 
-    render json: { categories: categories_hashtags, tags: tag_hashtags }
+    render json: {categories: categories_hashtags, tags: tag_hashtags}
   end
 end

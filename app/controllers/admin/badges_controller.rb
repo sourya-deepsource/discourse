@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
-require 'csv'
+require "csv"
 
 class Admin::BadgesController < Admin::AdminController
-
   def index
     data = {
       badge_types: BadgeType.all.order(:id).to_a,
@@ -11,7 +10,7 @@ class Admin::BadgesController < Admin::AdminController
       badges: Badge.includes(:badge_grouping)
         .includes(:badge_type)
         .references(:badge_grouping)
-        .order('badge_groupings.position, badge_type_id, badges.name').to_a,
+        .order("badge_groupings.position, badge_type_id, badges.name").to_a,
       protected_system_fields: Badge.protected_system_fields,
       triggers: Badge.trigger_hash
     }
@@ -24,9 +23,9 @@ class Admin::BadgesController < Admin::AdminController
     end
 
     render json: BadgeGranter.preview(params[:sql],
-                                      target_posts: params[:target_posts] == "true",
-                                      explain: params[:explain] == "true",
-                                      trigger: params[:trigger].to_i)
+      target_posts: params[:target_posts] == "true",
+      explain: params[:explain] == "true",
+      trigger: params[:trigger].to_i)
   end
 
   def new
@@ -43,7 +42,7 @@ class Admin::BadgesController < Admin::AdminController
     badge = Badge.find_by(id: params[:badge_id])
     raise Discourse::InvalidParameters if csv_file.try(:tempfile).nil? || badge.nil?
 
-    replace_badge_owners = params[:replace_badge_owners] == 'true'
+    replace_badge_owners = params[:replace_badge_owners] == "true"
     BadgeGranter.revoke_all(badge) if replace_badge_owners
 
     batch_number = 1
@@ -51,7 +50,7 @@ class Admin::BadgesController < Admin::AdminController
     batch = []
 
     File.open(csv_file) do |csv|
-      mode = Email.is_valid?(CSV.parse_line(csv.first).first) ? 'email' : 'username'
+      mode = Email.is_valid?(CSV.parse_line(csv.first).first) ? "email" : "username"
       csv.rewind
 
       csv.each_line do |email_line|
@@ -76,7 +75,7 @@ class Admin::BadgesController < Admin::AdminController
 
     head :ok
   rescue CSV::MalformedCSVError
-    render_json_error I18n.t('badges.mass_award.errors.invalid_csv', line_number: line_number), status: 400
+    render_json_error I18n.t("badges.mass_award.errors.invalid_csv", line_number: line_number), status: 400
   end
 
   def badge_types
@@ -139,6 +138,7 @@ class Admin::BadgesController < Admin::AdminController
   end
 
   private
+
   def find_badge
     params.require(:id)
     Badge.find(params[:id])
@@ -149,7 +149,7 @@ class Admin::BadgesController < Admin::AdminController
   def update_badge_from_params(badge, opts = {})
     errors = []
     Badge.transaction do
-      allowed  = Badge.column_names.map(&:to_sym)
+      allowed = Badge.column_names.map(&:to_sym)
       allowed -= [:id, :created_at, :updated_at, :grant_count]
       allowed -= Badge.protected_system_fields if badge.system?
       allowed -= [:query] unless SiteSetting.enable_badge_sql
@@ -157,7 +157,7 @@ class Admin::BadgesController < Admin::AdminController
       params.permit(*allowed)
 
       allowed.each do |key|
-        badge.public_send("#{key}=" , params[key]) if params[key]
+        badge.public_send("#{key}=", params[key]) if params[key]
       end
 
       # Badge query contract checks

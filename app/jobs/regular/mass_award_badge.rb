@@ -8,10 +8,10 @@ module Jobs
 
       users = User.select(:id, :username, :locale)
 
-      if mode == 'email'
-        users = users.with_email(args[:users_batch])
+      users = if mode == "email"
+        users.with_email(args[:users_batch])
       else
-        users = users.where(username_lower: args[:users_batch].map!(&:downcase))
+        users.where(username_lower: args[:users_batch].map!(&:downcase))
       end
 
       return if users.empty? || badge.nil?

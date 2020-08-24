@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 class UserApiKeysController < ApplicationController
-
-  layout 'no_ember'
+  layout "no_ember"
 
   requires_login only: [:create, :create_otp, :revoke, :undo_revoke]
   skip_before_action :redirect_to_login_if_required, only: [:new, :otp]
@@ -11,7 +10,6 @@ class UserApiKeysController < ApplicationController
   AUTH_API_VERSION ||= 4
 
   def new
-
     if request.head?
       head :ok, auth_api_version: AUTH_API_VERSION
       return
@@ -24,9 +22,9 @@ class UserApiKeysController < ApplicationController
       cookies[:destination_url] = request.fullpath
 
       if SiteSetting.enable_sso?
-        redirect_to path('/session/sso')
+        redirect_to path("/session/sso")
       else
-        redirect_to path('/login')
+        redirect_to path("/login")
       end
       return
     end
@@ -44,13 +42,11 @@ class UserApiKeysController < ApplicationController
     @push_url = params[:push_url]
     @localized_scopes = params[:scopes].split(",").map { |s| I18n.t("user_api_key.scopes.#{s}") }
     @scopes = params[:scopes]
-
   rescue Discourse::InvalidAccess
     @generic_error = true
   end
 
   def create
-
     require_params
 
     if params.key?(:auth_redirect)
@@ -95,7 +91,7 @@ class UserApiKeysController < ApplicationController
       uri = URI.parse(params[:auth_redirect])
       query_attributes = [uri.query, "payload=#{CGI.escape(@payload)}"]
       query_attributes << "oneTimePassword=#{CGI.escape(otp_payload)}" if scopes.include?("one_time_password")
-      uri.query = query_attributes.compact.join('&')
+      uri.query = query_attributes.compact.join("&")
 
       redirect_to(uri.to_s)
     else
@@ -103,7 +99,7 @@ class UserApiKeysController < ApplicationController
         format.html { render :show }
         format.json do
           instructions = I18n.t("user_api_key.instructions", application_name: @application_name)
-          render json: { payload: @payload, instructions: instructions }
+          render json: {payload: @payload, instructions: instructions}
         end
       end
     end
@@ -116,9 +112,9 @@ class UserApiKeysController < ApplicationController
       cookies[:destination_url] = request.fullpath
 
       if SiteSetting.enable_sso?
-        redirect_to path('/session/sso')
+        redirect_to path("/session/sso")
       else
-        redirect_to path('/login')
+        redirect_to path("/login")
       end
       return
     end
@@ -144,7 +140,7 @@ class UserApiKeysController < ApplicationController
   def revoke
     revoke_key = find_key if params[:id]
 
-    if current_key = request.env['HTTP_USER_API_KEY']
+    if current_key = request.env["HTTP_USER_API_KEY"]
       request_key = UserApiKey.with_key(current_key).first
       revoke_key ||= request_key
       if request_key && request_key.id != revoke_key.id && !request_key.scopes.include?("write")
@@ -172,11 +168,11 @@ class UserApiKeysController < ApplicationController
 
   def require_params
     [
-     :public_key,
-     :nonce,
-     :scopes,
-     :client_id,
-     :application_name
+      :public_key,
+      :nonce,
+      :scopes,
+      :client_id,
+      :application_name
     ].each { |p| params.require(p) }
   end
 
@@ -190,9 +186,9 @@ class UserApiKeysController < ApplicationController
 
   def require_params_otp
     [
-     :public_key,
-     :auth_redirect,
-     :application_name
+      :public_key,
+      :auth_redirect,
+      :application_name
     ].each { |p| params.require(p) }
   end
 

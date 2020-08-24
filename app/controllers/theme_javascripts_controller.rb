@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 class ThemeJavascriptsController < ApplicationController
   DISK_CACHE_PATH = "#{Rails.root}/tmp/javascript-cache"
 
@@ -57,10 +58,10 @@ class ThemeJavascriptsController < ApplicationController
 
   def set_cache_control_headers
     if Rails.env.development?
-      response.headers['Last-Modified'] = Time.zone.now.httpdate
+      response.headers["Last-Modified"] = Time.zone.now.httpdate
       immutable_for(1.second)
     else
-      response.headers['Last-Modified'] = last_modified.httpdate if last_modified
+      response.headers["Last-Modified"] = last_modified.httpdate if last_modified
       immutable_for(1.year)
     end
   end

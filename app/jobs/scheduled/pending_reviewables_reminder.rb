@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class PendingReviewablesReminder < ::Jobs::Scheduled
     every 1.hour
 
@@ -14,21 +13,21 @@ module Jobs
         reviewable_ids = Reviewable
           .pending
           .default_visible
-          .where('latest_score < ?', SiteSetting.notify_about_flags_after.to_i.hours.ago)
-          .order('id DESC')
+          .where("latest_score < ?", SiteSetting.notify_about_flags_after.to_i.hours.ago)
+          .order("id DESC")
           .pluck(:id)
 
         if reviewable_ids.size > 0 && self.class.last_notified_id < reviewable_ids[0]
           usernames = active_moderator_usernames
-          mentions = usernames.size > 0 ? "@#{usernames.join(', @')} " : ""
+          mentions = usernames.size > 0 ? "@#{usernames.join(", @")} " : ""
 
           @sent_reminder = PostCreator.create(
             Discourse.system_user,
             target_group_names: Group[:moderators].name,
             archetype: Archetype.private_message,
             subtype: TopicSubtype.system_message,
-            title: I18n.t('reviewables_reminder.subject_template', count: reviewable_ids.size),
-            raw: mentions + I18n.t('reviewables_reminder.submitted', count: SiteSetting.notify_about_flags_after, base_path: Discourse.base_path)
+            title: I18n.t("reviewables_reminder.subject_template", count: reviewable_ids.size),
+            raw: mentions + I18n.t("reviewables_reminder.submitted", count: SiteSetting.notify_about_flags_after, base_path: Discourse.base_path)
           ).present?
 
           self.class.last_notified_id = reviewable_ids[0]
@@ -55,11 +54,9 @@ module Jobs
     def active_moderator_usernames
       User.where(moderator: true)
         .human_users
-        .order('last_seen_at DESC')
+        .order("last_seen_at DESC")
         .limit(3)
         .pluck(:username)
     end
-
   end
-
 end

@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
-require 'base64'
+require "base64"
 
 class Admin::ThemesController < Admin::AdminController
-
   skip_before_action :check_xhr, only: [:show, :preview, :export]
 
   def preview
@@ -14,7 +13,6 @@ class Admin::ThemesController < Admin::AdminController
   end
 
   def upload_asset
-
     ban_in_allowlist_mode!
 
     path = params[:file].path
@@ -26,14 +24,14 @@ class Admin::ThemesController < Admin::AdminController
         if upload.errors.count > 0
           render_json_error upload
         else
-          render json: { upload_id: upload.id }, status: :created
+          render json: {upload_id: upload.id}, status: :created
         end
       end
     end
   end
 
   def generate_key_pair
-    require 'sshkey'
+    require "sshkey"
     k = SSHKey.generate
 
     render json: {
@@ -42,12 +40,12 @@ class Admin::ThemesController < Admin::AdminController
     }
   end
 
-  THEME_CONTENT_TYPES ||= %w{
+  THEME_CONTENT_TYPES ||= %w[
     application/gzip
     application/x-gzip
     application/x-zip-compressed
     application/zip
-  }
+  ]
 
   def import
     @theme = nil
@@ -56,12 +54,11 @@ class Admin::ThemesController < Admin::AdminController
       ban_in_allowlist_mode!
 
       # .dcstyle.json import. Deprecated, but still available to allow conversion
-      json = JSON::parse(params[:theme].read)
-      theme = json['theme']
+      json = JSON.parse(params[:theme].read)
+      theme = json["theme"]
 
       @theme = Theme.new(name: theme["name"], user_id: theme_user.id)
       theme["theme_fields"]&.each do |field|
-
         if field["raw_upload"]
           begin
             tmp = Tempfile.new
@@ -96,7 +93,7 @@ class Admin::ThemesController < Admin::AdminController
       guardian.ensure_allowed_theme_repo_import!(remote.strip)
 
       begin
-        branch = params[:branch] ? params[:branch] : nil
+        branch = params[:branch] || nil
         @theme = RemoteTheme.import_theme(remote, theme_user, private_key: params[:private_key], branch: branch)
         render json: @theme, status: :created
       rescue RemoteTheme::ImportError => e
@@ -125,15 +122,14 @@ class Admin::ThemesController < Admin::AdminController
 
   def index
     @themes = Theme.order(:name).includes(:child_themes,
-                                          :parent_themes,
-                                          :remote_theme,
-                                          :theme_settings,
-                                          :settings_field,
-                                          :locale_fields,
-                                          :user,
-                                          :color_scheme,
-                                          theme_fields: :upload
-                                          )
+      :parent_themes,
+      :remote_theme,
+      :theme_settings,
+      :settings_field,
+      :locale_fields,
+      :user,
+      :color_scheme,
+      theme_fields: :upload)
     @color_schemes = ColorScheme.all.includes(:theme, color_scheme_colors: :color_scheme).to_a
 
     payload = {
@@ -149,7 +145,6 @@ class Admin::ThemesController < Admin::AdminController
   end
 
   def create
-
     ban_in_allowlist_mode!
 
     @theme = Theme.new(name: theme_params[:name],
@@ -224,7 +219,7 @@ class Admin::ThemesController < Admin::AdminController
           error = I18n.t("themes.bad_color_scheme") if @theme.errors[:color_scheme].present?
           error ||= I18n.t("themes.other_error")
 
-          render json: { errors: [ error ] }, status: :unprocessable_entity
+          render json: {errors: [error]}, status: :unprocessable_entity
         end
       end
     end
@@ -258,7 +253,7 @@ class Admin::ThemesController < Admin::AdminController
     exporter = ThemeStore::ZipExporter.new(@theme)
     file_path = exporter.package_filename
 
-    headers['Content-Length'] = File.size(file_path).to_s
+    headers["Content-Length"] = File.size(file_path).to_s
     send_data File.read(file_path),
       filename: File.basename(file_path),
       content_type: "application/zip"
@@ -296,7 +291,7 @@ class Admin::ThemesController < Admin::AdminController
   private
 
   def ban_in_allowlist_mode!
-    raise Discourse::InvalidAccess if !GlobalSetting.allowed_theme_ids.nil?
+    raise Discourse::InvalidAccess unless GlobalSetting.allowed_theme_ids.nil?
   end
 
   def add_relative_themes!(kind, ids)

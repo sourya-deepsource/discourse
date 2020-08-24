@@ -15,8 +15,8 @@ class PostActionsController < ApplicationController
       @post_action_type_id,
       is_warning: params[:is_warning],
       message: params[:message],
-      take_action: params[:take_action] == 'true',
-      flag_topic: params[:flag_topic] == 'true'
+      take_action: params[:take_action] == "true",
+      flag_topic: params[:flag_topic] == "true"
     )
     result = creator.perform
 
@@ -28,8 +28,8 @@ class PostActionsController < ApplicationController
 
       if @post_action_type_id == PostActionType.types[:like]
         limiter = result.post_action.post_action_rate_limiter
-        response.headers['Discourse-Actions-Remaining'] = limiter.remaining.to_s
-        response.headers['Discourse-Actions-Max'] = limiter.max.to_s
+        response.headers["Discourse-Actions-Remaining"] = limiter.remaining.to_s
+        response.headers["Discourse-Actions-Max"] = limiter.max.to_s
       end
       render_post_json(@post, add_raw: false)
     end
@@ -55,7 +55,7 @@ class PostActionsController < ApplicationController
     params.require(:id)
 
     flag_topic = params[:flag_topic]
-    flag_topic = flag_topic && (flag_topic == true || flag_topic == "true")
+    flag_topic &&= (flag_topic == true || flag_topic == "true")
 
     post_id = if flag_topic
       begin

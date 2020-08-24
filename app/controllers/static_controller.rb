@@ -1,25 +1,24 @@
 # frozen_string_literal: true
 
 class StaticController < ApplicationController
-
   skip_before_action :check_xhr, :redirect_to_login_if_required
   skip_before_action :verify_authenticity_token, only: [:brotli_asset, :cdn_asset, :enter, :favicon, :service_worker_asset]
   skip_before_action :preload_json, only: [:brotli_asset, :cdn_asset, :enter, :favicon, :service_worker_asset]
   skip_before_action :handle_theme, only: [:brotli_asset, :cdn_asset, :enter, :favicon, :service_worker_asset]
 
-  PAGES_WITH_EMAIL_PARAM = ['login', 'password_reset', 'signup']
-  MODAL_PAGES = ['password_reset', 'signup']
+  PAGES_WITH_EMAIL_PARAM = ["login", "password_reset", "signup"]
+  MODAL_PAGES = ["password_reset", "signup"]
 
   def show
-    return redirect_to(path '/') if current_user && (params[:id] == 'login' || params[:id] == 'signup')
-    if SiteSetting.login_required? && current_user.nil? && ['faq', 'guidelines'].include?(params[:id])
-      return redirect_to path('/login')
+    return redirect_to(path("/")) if current_user && (params[:id] == "login" || params[:id] == "signup")
+    if SiteSetting.login_required? && current_user.nil? && ["faq", "guidelines"].include?(params[:id])
+      return redirect_to path("/login")
     end
 
     map = {
-      "faq" => { redirect: "faq_url", topic_id: "guidelines_topic_id" },
-      "tos" => { redirect: "tos_url", topic_id: "tos_topic_id" },
-      "privacy" => { redirect: "privacy_policy_url", topic_id: "privacy_topic_id" }
+      "faq" => {redirect: "faq_url", topic_id: "guidelines_topic_id"},
+      "tos" => {redirect: "tos_url", topic_id: "tos_topic_id"},
+      "privacy" => {redirect: "privacy_policy_url", topic_id: "privacy_topic_id"}
     }
 
     @page = params[:id]
@@ -31,10 +30,10 @@ class StaticController < ApplicationController
     end
 
     # The /guidelines route ALWAYS shows our FAQ, ignoring the faq_url site setting.
-    @page = 'faq' if @page == 'guidelines'
+    @page = "faq" if @page == "guidelines"
 
     # Don't allow paths like ".." or "/" or anything hacky like that
-    @page = @page.gsub(/[^a-z0-9\_\-]/, '')
+    @page = @page.gsub(/[^a-z0-9_\-]/, "")
 
     if map.has_key?(@page)
       @topic = Topic.find_by_id(SiteSetting.get(map[@page][:topic_id]))
@@ -65,12 +64,12 @@ class StaticController < ApplicationController
     end
 
     if PAGES_WITH_EMAIL_PARAM.include?(@page) && params[:email]
-      cookies[:email] = { value: params[:email], expires: 1.day.from_now }
+      cookies[:email] = {value: params[:email], expires: 1.day.from_now}
     end
 
     file = "static/#{@page}.#{I18n.locale}"
     file = "static/#{@page}.en" if lookup_context.find_all("#{file}.html").empty?
-    file = "static/#{@page}"    if lookup_context.find_all("#{file}.html").empty?
+    file = "static/#{@page}" if lookup_context.find_all("#{file}.html").empty?
 
     if lookup_context.find_all("#{file}.html").any?
       render file, layout: !request.xhr?, formats: [:html]
@@ -103,8 +102,8 @@ class StaticController < ApplicationController
         uri = URI(redirect_location)
 
         if uri.path.present? &&
-           (uri.host.blank? || uri.host == forum_uri.host) &&
-           uri.path !~ /\./
+            (uri.host.blank? || uri.host == forum_uri.host) &&
+            uri.path !~ /\./
 
           destination = "#{uri.path}#{uri.query ? "?#{uri.query}" : ""}"
         end
@@ -133,7 +132,7 @@ class StaticController < ApplicationController
     is_asset_path
 
     hijack do
-      data = DistributedMemoizer.memoize("FAVICON#{SiteIconManager.favicon_url}", 60 * 30) do
+      data = DistributedMemoizer.memoize("FAVICON#{SiteIconManager.favicon_url}", 60 * 30) {
         favicon = SiteIconManager.favicon
         next "" unless favicon
 
@@ -148,7 +147,7 @@ class StaticController < ApplicationController
 
             file&.read || ""
           rescue => e
-            AdminDashboardData.add_problem_message('dashboard.bad_favicon_url', 1800)
+            AdminDashboardData.add_problem_message("dashboard.bad_favicon_url", 1800)
             Rails.logger.debug("Failed to fetch favicon #{favicon.url}: #{e}\n#{e.backtrace}")
             ""
           ensure
@@ -157,7 +156,7 @@ class StaticController < ApplicationController
         else
           File.read(Rails.root.join("public", favicon.url[1..-1]))
         end
-      end
+      }
 
       if data.bytesize == 0
         @@default_favicon ||= File.read(Rails.root + "public/images/default-favicon.png")
@@ -167,7 +166,7 @@ class StaticController < ApplicationController
         immutable_for 1.year
         response.headers["Expires"] = 1.year.from_now.httpdate
         response.headers["Content-Length"] = data.bytesize.to_s
-        response.headers["Last-Modified"] = Time.new('2000-01-01').httpdate
+        response.headers["Last-Modified"] = Time.new("2000-01-01").httpdate
         render body: data, content_type: "image/png"
       end
     end
@@ -177,7 +176,7 @@ class StaticController < ApplicationController
     is_asset_path
 
     serve_asset(".br") do
-      response.headers["Content-Encoding"] = 'br'
+      response.headers["Content-Encoding"] = "br"
     end
   end
 
@@ -197,13 +196,13 @@ class StaticController < ApplicationController
         # However, ensure that these may be cached and served for longer on servers.
         immutable_for 1.year
 
-        if Rails.application.assets_manifest.assets['service-worker.js']
-          path = File.expand_path(Rails.root + "public/assets/#{Rails.application.assets_manifest.assets['service-worker.js']}")
+        if Rails.application.assets_manifest.assets["service-worker.js"]
+          path = File.expand_path(Rails.root + "public/assets/#{Rails.application.assets_manifest.assets["service-worker.js"]}")
           response.headers["Last-Modified"] = File.ctime(path).httpdate
         end
         render(
-          plain: Rails.application.assets_manifest.find_sources('service-worker.js').first,
-          content_type: 'application/javascript'
+          plain: Rails.application.assets_manifest.find_sources("service-worker.js").first,
+          content_type: "application/javascript"
         )
       end
     end
@@ -212,7 +211,6 @@ class StaticController < ApplicationController
   protected
 
   def serve_asset(suffix = nil)
-
     path = File.expand_path(Rails.root + "public/assets/#{params[:path]}#{suffix}")
 
     # SECURITY what if path has /../
@@ -246,12 +244,10 @@ class StaticController < ApplicationController
     immutable_for 1.year
 
     # disable NGINX mucking with transfer
-    request.env['sendfile.type'] = ''
+    request.env["sendfile.type"] = ""
 
-    opts = { disposition: nil }
-    opts[:type] = "application/javascript" if params[:path] =~ /\.js$/
+    opts = {disposition: nil}
+    opts[:type] = "application/javascript" if /\.js$/.match?(params[:path])
     send_file(path, opts)
-
   end
-
 end

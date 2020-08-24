@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class AutoExpireUserApiKeys < ::Jobs::Scheduled
     every 1.day
 
@@ -13,5 +12,4 @@ module Jobs
       end
     end
   end
-
 end

@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class BulkGrantTrustLevel < ::Jobs::Base
-
     def execute(args)
       trust_level = args[:trust_level]
       user_ids = args[:user_ids]

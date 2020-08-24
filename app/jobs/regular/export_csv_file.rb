@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
-require 'csv'
+require "csv"
 
 module Jobs
-
   class ExportCsvFile < ::Jobs::Base
     sidekiq_options retry: false
 
@@ -12,17 +11,17 @@ module Jobs
     attr_accessor :entity
 
     HEADER_ATTRS_FOR ||= HashWithIndifferentAccess.new(
-      user_archive: ['topic_title', 'categories', 'is_pm', 'post', 'like_count', 'reply_count', 'url', 'created_at'],
-      user_archive_profile: ['location', 'website', 'bio', 'views'],
-      user_list: ['id', 'name', 'username', 'email', 'title', 'created_at', 'last_seen_at', 'last_posted_at', 'last_emailed_at', 'trust_level', 'approved', 'suspended_at', 'suspended_till', 'silenced_till', 'active', 'admin', 'moderator', 'ip_address', 'staged', 'secondary_emails'],
-      user_stats: ['topics_entered', 'posts_read_count', 'time_read', 'topic_count', 'post_count', 'likes_given', 'likes_received'],
-      user_profile: ['location', 'website', 'views'],
-      user_sso: ['external_id', 'external_email', 'external_username', 'external_name', 'external_avatar_url'],
-      staff_action: ['staff_user', 'action', 'subject', 'created_at', 'details', 'context'],
-      screened_email: ['email', 'action', 'match_count', 'last_match_at', 'created_at', 'ip_address'],
-      screened_ip: ['ip_address', 'action', 'match_count', 'last_match_at', 'created_at'],
-      screened_url: ['domain', 'action', 'match_count', 'last_match_at', 'created_at'],
-      report: ['date', 'value']
+      user_archive: ["topic_title", "categories", "is_pm", "post", "like_count", "reply_count", "url", "created_at"],
+      user_archive_profile: ["location", "website", "bio", "views"],
+      user_list: ["id", "name", "username", "email", "title", "created_at", "last_seen_at", "last_posted_at", "last_emailed_at", "trust_level", "approved", "suspended_at", "suspended_till", "silenced_till", "active", "admin", "moderator", "ip_address", "staged", "secondary_emails"],
+      user_stats: ["topics_entered", "posts_read_count", "time_read", "topic_count", "post_count", "likes_given", "likes_received"],
+      user_profile: ["location", "website", "views"],
+      user_sso: ["external_id", "external_email", "external_username", "external_name", "external_avatar_url"],
+      staff_action: ["staff_user", "action", "subject", "created_at", "details", "context"],
+      screened_email: ["email", "action", "match_count", "last_match_at", "created_at", "ip_address"],
+      screened_ip: ["ip_address", "action", "match_count", "last_match_at", "created_at"],
+      screened_url: ["domain", "action", "match_count", "last_match_at", "created_at"],
+      report: ["date", "value"]
     )
 
     def execute(args)
@@ -30,8 +29,8 @@ module Jobs
       @extra = HashWithIndifferentAccess.new(args[:args]) if args[:args]
       @current_user = User.find_by(id: args[:user_id])
 
-      entities = [{ name: @entity }]
-      entities << { name: "user_archive_profile" } if @entity === "user_archive"
+      entities = [{name: @entity}]
+      entities << {name: "user_archive_profile"} if @entity === "user_archive"
 
       entities.each do |entity|
         entity[:method] = :"#{entity[:name]}_export"
@@ -51,7 +50,7 @@ module Jobs
       export_title = if @entity == "report" && @extra[:name].present?
         I18n.t("reports.#{@extra[:name]}.title")
       else
-        @entity.gsub('_', ' ').titleize
+        @entity.tr("_", " ").titleize
       end
 
       filename = entities[0][:filename] # use first entity as a name for this export
@@ -61,7 +60,7 @@ module Jobs
       dirname = "#{UserExport.base_directory}/#{filename}"
 
       # ensure directory exists
-      FileUtils.mkdir_p(dirname) unless Dir.exists?(dirname)
+      FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
 
       # Generate a compressed CSV file
       begin
@@ -85,8 +84,8 @@ module Jobs
           upload = UploadCreator.new(
             file,
             File.basename(zip_filename),
-            type: 'csv_export',
-            for_export: 'true'
+            type: "csv_export",
+            for_export: "true"
           ).create_for(@current_user.id)
 
           if upload.persisted?
@@ -104,7 +103,7 @@ module Jobs
       if user_export.present? && post.present?
         topic = post.topic
         user_export.update_columns(topic_id: topic.id)
-        topic.update_status('closed', true, Discourse.system_user)
+        topic.update_status("closed", true, Discourse.system_user)
       end
     end
 
@@ -139,7 +138,7 @@ module Jobs
 
       condition = {}
       if @extra && @extra[:trust_level] && trust_level = TrustLevel.levels[@extra[:trust_level].to_sym]
-        condition = { trust_level: trust_level }
+        condition = {trust_level: trust_level}
       end
 
       if SiteSetting.enable_sso
@@ -166,9 +165,9 @@ module Jobs
       return enum_for(:staff_action_export) unless block_given?
 
       staff_action_data = if @current_user.admin?
-        UserHistory.only_staff_actions.order('id DESC')
+        UserHistory.only_staff_actions.order("id DESC")
       else
-        UserHistory.where(admin_only: false).only_staff_actions.order('id DESC')
+        UserHistory.where(admin_only: false).only_staff_actions.order("id DESC")
       end
 
       staff_action_data.each do |staff_action|
@@ -179,7 +178,7 @@ module Jobs
     def screened_email_export
       return enum_for(:screened_email_export) unless block_given?
 
-      ScreenedEmail.order('last_match_at DESC').each do |screened_email|
+      ScreenedEmail.order("last_match_at DESC").each do |screened_email|
         yield get_screened_email_fields(screened_email)
       end
     end
@@ -187,7 +186,7 @@ module Jobs
     def screened_ip_export
       return enum_for(:screened_ip_export) unless block_given?
 
-      ScreenedIpAddress.order('id DESC').each do |screened_ip|
+      ScreenedIpAddress.order("id DESC").each do |screened_ip|
         yield get_screened_ip_fields(screened_ip)
       end
     end
@@ -197,7 +196,7 @@ module Jobs
 
       ScreenedUrl.select("domain, sum(match_count) as match_count, max(last_match_at) as last_match_at, min(created_at) as created_at")
         .group(:domain)
-        .order('last_match_at DESC')
+        .order("last_match_at DESC")
         .each do |screened_url|
         yield get_screened_url_fields(screened_url)
       end
@@ -208,10 +207,18 @@ module Jobs
 
       # If dates are invalid consider then `nil`
       if @extra[:start_date].is_a?(String)
-        @extra[:start_date] = @extra[:start_date].to_date.beginning_of_day rescue nil
+        @extra[:start_date] = begin
+                                @extra[:start_date].to_date.beginning_of_day
+                              rescue
+                                nil
+                              end
       end
       if @extra[:end_date].is_a?(String)
-        @extra[:end_date] = @extra[:end_date].to_date.end_of_day rescue nil
+        @extra[:end_date] = begin
+                              @extra[:end_date].to_date.end_of_day
+                            rescue
+                              nil
+                            end
       end
 
       @extra[:filters] = {}
@@ -244,7 +251,7 @@ module Jobs
         report.data.map do |series|
           header << series[:label]
           series[:data].each do |datapoint|
-            data[datapoint[:x]] ||= { x: datapoint[:x] }
+            data[datapoint[:x]] ||= {x: datapoint[:x]}
             data[datapoint[:x]][series[:label]] = datapoint[:y]
           end
         end
@@ -259,9 +266,9 @@ module Jobs
     end
 
     def get_header(entity)
-      if entity == 'user_list'
-        header_array = HEADER_ATTRS_FOR['user_list'] + HEADER_ATTRS_FOR['user_stats'] + HEADER_ATTRS_FOR['user_profile']
-        header_array.concat(HEADER_ATTRS_FOR['user_sso']) if SiteSetting.enable_sso
+      if entity == "user_list"
+        header_array = HEADER_ATTRS_FOR["user_list"] + HEADER_ATTRS_FOR["user_stats"] + HEADER_ATTRS_FOR["user_profile"]
+        header_array.concat(HEADER_ATTRS_FOR["user_sso"]) if SiteSetting.enable_sso
         user_custom_fields = UserField.all
         if user_custom_fields.present?
           user_custom_fields.each do |custom_field|
@@ -279,7 +286,7 @@ module Jobs
     private
 
     def escape_comma(string)
-      string&.include?(",") ? %Q|"#{string}"| : string
+      string&.include?(",") ? %("#{string}") : string
     end
 
     def get_base_user_array(user)
@@ -313,7 +320,7 @@ module Jobs
         user.user_stat.likes_received,
         escape_comma(user.user_profile.location),
         user.user_profile.website,
-        user.user_profile.views,
+        user.user_profile.views
       ]
     end
 
@@ -345,7 +352,7 @@ module Jobs
       user_archive_array = []
       topic_data = user_archive.topic
       user_archive = user_archive.as_json
-      topic_data = Topic.with_deleted.find_by(id: user_archive['topic_id']) if topic_data.nil?
+      topic_data = Topic.with_deleted.find_by(id: user_archive["topic_id"]) if topic_data.nil?
       return user_archive_array if topic_data.nil?
 
       all_categories = Category.all.to_h { |category| [category.id, category] }
@@ -360,12 +367,12 @@ module Jobs
       end
 
       is_pm = topic_data.archetype == "private_message" ? I18n.t("csv_export.boolean_yes") : I18n.t("csv_export.boolean_no")
-      url = "#{Discourse.base_url}/t/#{topic_data.slug}/#{topic_data.id}/#{user_archive['post_number']}"
+      url = "#{Discourse.base_url}/t/#{topic_data.slug}/#{topic_data.id}/#{user_archive["post_number"]}"
 
-      topic_hash = { "post" => user_archive['raw'], "topic_title" => topic_data.title, "categories" => categories, "is_pm" => is_pm, "url" => url }
+      topic_hash = {"post" => user_archive["raw"], "topic_title" => topic_data.title, "categories" => categories, "is_pm" => is_pm, "url" => url}
       user_archive.merge!(topic_hash)
 
-      HEADER_ATTRS_FOR['user_archive'].each do |attr|
+      HEADER_ATTRS_FOR["user_archive"].each do |attr|
         user_archive_array.push(user_archive[attr])
       end
 
@@ -375,15 +382,15 @@ module Jobs
     def get_user_archive_profile_fields(user_profile)
       user_archive_profile = []
 
-      HEADER_ATTRS_FOR['user_archive_profile'].each do |attr|
+      HEADER_ATTRS_FOR["user_archive_profile"].each do |attr|
         data =
-          if attr == 'bio'
-            user_profile.attributes['bio_raw']
+          if attr == "bio"
+            user_profile.attributes["bio_raw"]
           else
             user_profile.attributes[attr]
           end
 
-          user_archive_profile.push(data)
+        user_archive_profile.push(data)
       end
 
       user_archive_profile
@@ -392,21 +399,21 @@ module Jobs
     def get_staff_action_fields(staff_action)
       staff_action_array = []
 
-      HEADER_ATTRS_FOR['staff_action'].each do |attr|
+      HEADER_ATTRS_FOR["staff_action"].each do |attr|
         data =
-          if attr == 'action'
+          if attr == "action"
             UserHistory.actions.key(staff_action.attributes[attr]).to_s
-          elsif attr == 'staff_user'
-            user = User.find_by(id: staff_action.attributes['acting_user_id'])
-            user.username if !user.nil?
-          elsif attr == 'subject'
-            user = User.find_by(id: staff_action.attributes['target_user_id'])
+          elsif attr == "staff_user"
+            user = User.find_by(id: staff_action.attributes["acting_user_id"])
+            user&.username
+          elsif attr == "subject"
+            user = User.find_by(id: staff_action.attributes["target_user_id"])
             user.nil? ? staff_action.attributes[attr] : "#{user.username} #{staff_action.attributes[attr]}"
           else
             staff_action.attributes[attr]
           end
 
-          staff_action_array.push(data)
+        staff_action_array.push(data)
       end
       staff_action_array
     end
@@ -414,10 +421,10 @@ module Jobs
     def get_screened_email_fields(screened_email)
       screened_email_array = []
 
-      HEADER_ATTRS_FOR['screened_email'].each do |attr|
+      HEADER_ATTRS_FOR["screened_email"].each do |attr|
         data =
-          if attr == 'action'
-            ScreenedEmail.actions.key(screened_email.attributes['action_type']).to_s
+          if attr == "action"
+            ScreenedEmail.actions.key(screened_email.attributes["action_type"]).to_s
           else
             screened_email.attributes[attr]
           end
@@ -431,10 +438,10 @@ module Jobs
     def get_screened_ip_fields(screened_ip)
       screened_ip_array = []
 
-      HEADER_ATTRS_FOR['screened_ip'].each do |attr|
+      HEADER_ATTRS_FOR["screened_ip"].each do |attr|
         data =
-          if attr == 'action'
-            ScreenedIpAddress.actions.key(screened_ip.attributes['action_type']).to_s
+          if attr == "action"
+            ScreenedIpAddress.actions.key(screened_ip.attributes["action_type"]).to_s
           else
             screened_ip.attributes[attr]
           end
@@ -448,10 +455,10 @@ module Jobs
     def get_screened_url_fields(screened_url)
       screened_url_array = []
 
-      HEADER_ATTRS_FOR['screened_url'].each do |attr|
+      HEADER_ATTRS_FOR["screened_url"].each do |attr|
         data =
-          if attr == 'action'
-            action = ScreenedUrl.actions.key(screened_url.attributes['action_type']).to_s
+          if attr == "action"
+            action = ScreenedUrl.actions.key(screened_url.attributes["action_type"]).to_s
             action = "do nothing" if action.blank?
           else
             screened_url.attributes[attr]

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class UserActionsController < ApplicationController
-
   def index
     params.require(:username)
     params.permit(:filter, :offset, :acting_username, :limit)
@@ -25,20 +24,19 @@ class UserActionsController < ApplicationController
     }
 
     stream = UserAction.stream(opts).to_a
-    if stream.empty? && (help_key = params['no_results_help_key'])
-      if user.id == guardian.user.try(:id)
-        help_key += ".self"
+    if stream.empty? && (help_key = params["no_results_help_key"])
+      help_key += if user.id == guardian.user.try(:id)
+        ".self"
       else
-        help_key += ".others"
+        ".others"
       end
       render json: {
         user_action: [],
         no_results_help: I18n.t(help_key)
       }
     else
-      render_serialized(stream, UserActionSerializer, root: 'user_actions')
+      render_serialized(stream, UserActionSerializer, root: "user_actions")
     end
-
   end
 
   def show
@@ -50,5 +48,4 @@ class UserActionsController < ApplicationController
     # DO NOT REMOVE
     # TODO should preload messages to avoid extra http req
   end
-
 end

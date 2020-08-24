@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class InvalidateInactiveAdmins < ::Jobs::Scheduled
     every 1.day
 
@@ -13,11 +12,10 @@ module Jobs
       User.human_users
         .where(admin: true)
         .where(active: true)
-        .where('last_seen_at < ?', timestamp)
+        .where("last_seen_at < ?", timestamp)
         .where("NOT EXISTS ( SELECT 1 from api_keys WHERE api_keys.user_id = users.id AND COALESCE(last_used_at, updated_at) > ? )", timestamp)
         .where("NOT EXISTS ( SELECT 1 from posts WHERE posts.user_id = users.id AND created_at > ?)", timestamp)
         .each do |user|
-
         User.transaction do
           user.deactivate(Discourse.system_user)
           user.email_tokens.update_all(confirmed: false, expired: true)
@@ -34,5 +32,4 @@ module Jobs
       end
     end
   end
-
 end

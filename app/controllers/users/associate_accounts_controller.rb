@@ -10,11 +10,11 @@ class Users::AssociateAccountsController < ApplicationController
 
     provider_name = auth.provider
     authenticator = Discourse.enabled_authenticators.find { |a| a.name == provider_name }
-    raise Discourse::InvalidAccess.new(I18n.t('authenticator_not_found')) if authenticator.nil?
+    raise Discourse::InvalidAccess.new(I18n.t("authenticator_not_found")) if authenticator.nil?
 
     account_description = authenticator.description_for_auth_hash(auth)
 
-    render json: { token: params[:token], provider_name: provider_name, account_description: account_description }
+    render json: {token: params[:token], provider_name: provider_name, account_description: account_description}
   end
 
   ##
@@ -25,7 +25,7 @@ class Users::AssociateAccountsController < ApplicationController
 
     provider_name = auth.provider
     authenticator = Discourse.enabled_authenticators.find { |a| a.name == provider_name }
-    raise Discourse::InvalidAccess.new(I18n.t('authenticator_not_found')) if authenticator.nil?
+    raise Discourse::InvalidAccess.new(I18n.t("authenticator_not_found")) if authenticator.nil?
 
     auth_result = authenticator.after_authenticate(auth, existing_account: current_user)
     DiscourseEvent.trigger(:after_auth, authenticator, auth_result)

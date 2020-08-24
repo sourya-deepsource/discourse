@@ -39,7 +39,7 @@ class TopicsController < ApplicationController
     topic = Topic.find_by_slug(params[:slug])
     guardian.ensure_can_see!(topic)
     raise Discourse::NotFound unless topic
-    render json: { slug: topic.slug, topic_id: topic.id, url: topic.url }
+    render json: {slug: topic.slug, topic_id: topic.id, url: topic.url}
   end
 
   def show
@@ -53,13 +53,17 @@ class TopicsController < ApplicationController
 
     # work around people somehow sending in arrays,
     # arrays are not supported
-    params[:page] = params[:page].to_i rescue 1
+    params[:page] = begin
+                      params[:page].to_i
+                    rescue
+                      1
+                    end
 
     opts = params.slice(:username_filters, :filter, :page, :post_number, :show_deleted)
     username_filters = opts[:username_filters]
 
     opts[:print] = true if params[:print].present?
-    opts[:username_filters] = username_filters.split(',') if username_filters.is_a?(String)
+    opts[:username_filters] = username_filters.split(",") if username_filters.is_a?(String)
 
     # Special case: a slug with a number in front should look by slug first before looking
     # up that particular number
@@ -95,22 +99,22 @@ class TopicsController < ApplicationController
       deleted = guardian.can_see_topic?(ex.obj, false) ||
         (!guardian.can_see_topic?(ex.obj) &&
          ex.obj&.access_topic_via_group &&
-         ex.obj.deleted_at)
+         ex.obj&.deleted_at)
 
       if SiteSetting.detailed_404
         if deleted
           raise Discourse::NotFound.new(
-            'deleted topic',
-            custom_message: 'deleted_topic',
+            "deleted topic",
+            custom_message: "deleted_topic",
             status: 410,
             check_permalinks: true,
             original_path: ex.obj.relative_url
           )
         elsif !guardian.can_see_topic?(ex.obj) && group = ex.obj&.access_topic_via_group
           raise Discourse::InvalidAccess.new(
-            'not in group',
+            "not in group",
             ex.obj,
-            custom_message: 'not_in_group.title_topic',
+            custom_message: "not_in_group.title_topic",
             group: group
           )
         end
@@ -144,7 +148,7 @@ class TopicsController < ApplicationController
     end
 
     unless @topic_view.topic.visible
-      response.headers['X-Robots-Tag'] = 'noindex'
+      response.headers["X-Robots-Tag"] = "noindex"
     end
 
     canonical_url UrlHelper.absolute_without_cdn(@topic_view.canonical_path)
@@ -153,7 +157,7 @@ class TopicsController < ApplicationController
     # we would like to give them a bit more signal about age of data
     if use_crawler_layout?
       if last_modified = @topic_view.posts&.map { |p| p.updated_at }&.max&.httpdate
-        response.headers['Last-Modified'] = last_modified
+        response.headers["Last-Modified"] = last_modified
       end
     end
 
@@ -222,7 +226,7 @@ class TopicsController < ApplicationController
       asc: ActiveRecord::Type::Boolean.new.deserialize(params[:asc]),
       filter: params[:filter],
       include_suggested: include_suggested,
-      include_related: include_suggested,
+      include_related: include_suggested
     }
 
     fetch_topic_view(options)
@@ -256,16 +260,16 @@ class TopicsController < ApplicationController
     guardian.ensure_can_see!(@topic)
 
     @posts = Post.where(hidden: false, deleted_at: nil, topic_id: @topic.id)
-      .where('posts.id in (?)', post_ids)
+      .where("posts.id in (?)", post_ids)
       .joins("LEFT JOIN users u on u.id = posts.user_id")
       .pluck(:id, :cooked, :username)
-      .map do |post_id, cooked, username|
+      .map { |post_id, cooked, username|
       {
         post_id: post_id,
         username: username,
         excerpt: PrettyText.excerpt(cooked, 800, keep_emoji_images: true)
       }
-    end
+    }
 
     render json: @posts.to_json
   end
@@ -288,9 +292,7 @@ class TopicsController < ApplicationController
       .limit(1)
       .first
 
-    if last_notification
-      last_notification.update!(read: false)
-    end
+    last_notification&.update!(read: false)
 
     render body: nil
   end
@@ -320,7 +322,7 @@ class TopicsController < ApplicationController
       if category || (params[:category_id].to_i == 0)
         guardian.ensure_can_move_topic_to_category!(category)
       else
-        return render_json_error(I18n.t('category.errors.not_found'))
+        return render_json_error(I18n.t("category.errors.not_found"))
       end
 
       if category && topic_tags = (params[:tags] || topic.tags.pluck(:name)).reject { |c| c.empty? }
@@ -343,11 +345,11 @@ class TopicsController < ApplicationController
 
           invalid_tags = Tag.where_name(invalid_tags).pluck(:name)
 
-          if !invalid_tags.empty?
+          unless invalid_tags.empty?
             if (invalid_tags & DiscourseTagging.hidden_tag_names).present?
-              return render_json_error(I18n.t('category.errors.disallowed_tags_generic'))
+              return render_json_error(I18n.t("category.errors.disallowed_tags_generic"))
             else
-              return render_json_error(I18n.t('category.errors.disallowed_topic_tags', tags: invalid_tags.join(", ")))
+              return render_json_error(I18n.t("category.errors.disallowed_topic_tags", tags: invalid_tags.join(", ")))
             end
           end
         end
@@ -383,7 +385,7 @@ class TopicsController < ApplicationController
     topic = Topic.find_by(id: params[:topic_id])
     guardian.ensure_can_edit_tags!(topic)
 
-    success = PostRevisor.new(topic.first_post, topic).revise!(current_user, { tags: params[:tags] }, validate_post: false)
+    success = PostRevisor.new(topic.first_post, topic).revise!(current_user, {tags: params[:tags]}, validate_post: false)
 
     success ? render_serialized(topic, BasicTopicSerializer) : render_json_error(topic)
   end
@@ -397,7 +399,7 @@ class TopicsController < ApplicationController
     render json: {
       pinned_in_category_count: visible_topics.where(category_id: category_id).where(pinned_globally: false).where.not(pinned_at: nil).count,
       pinned_globally_count: visible_topics.where(pinned_globally: true).where.not(pinned_at: nil).count,
-      banner_count: Topic.listable_topics.where(archetype: Archetype.banner).count,
+      banner_count: Topic.listable_topics.where(archetype: Archetype.banner).count
     }
   end
 
@@ -408,15 +410,15 @@ class TopicsController < ApplicationController
 
     status = params[:status]
     topic_id = params[:topic_id].to_i
-    enabled = params[:enabled] == 'true'
+    enabled = params[:enabled] == "true"
 
     check_for_status_presence(:status, status)
     @topic = Topic.find_by(id: topic_id)
 
     case status
-    when 'closed'
+    when "closed"
       guardian.ensure_can_close_topic!(@topic)
-    when 'archived'
+    when "archived"
       guardian.ensure_can_archive_topic!(@topic)
     else
       guardian.ensure_can_moderate!(@topic)
@@ -460,8 +462,8 @@ class TopicsController < ApplicationController
       based_on_last_post: based_on_last_post
     }
 
-    options.merge!(category_id: params[:category_id]) if !params[:category_id].blank?
-    options.merge!(duration: params[:duration].to_i) if params[:duration].present?
+    options[:category_id] = params[:category_id] unless params[:category_id].blank?
+    options[:duration] = params[:duration].to_i if params[:duration].present?
 
     topic_status_update = topic.set_or_create_timer(
       status_type,
@@ -522,7 +524,7 @@ class TopicsController < ApplicationController
     group_ids = current_user.groups.pluck(:id)
     if group_ids.present?
       allowed_groups = topic.allowed_groups
-        .where('topic_allowed_groups.group_id IN (?)', group_ids).pluck(:id)
+        .where("topic_allowed_groups.group_id IN (?)", group_ids).pluck(:id)
       allowed_groups.each do |id|
         if archive
           GroupArchivedMessage.archive!(id, topic)
@@ -632,7 +634,7 @@ class TopicsController < ApplicationController
     if topic.private_message?
       guardian.ensure_can_invite_group_to_private_message!(group, topic)
       topic.invite_group(current_user, group)
-      render_json_dump BasicGroupSerializer.new(group, scope: guardian, root: 'group')
+      render_json_dump BasicGroupSerializer.new(group, scope: guardian, root: "group")
     else
       render json: failed_json, status: 422
     end
@@ -663,7 +665,7 @@ class TopicsController < ApplicationController
         user = User.find_by_username_or_email(username_or_email)
 
         if user
-          render_json_dump BasicUserSerializer.new(user, scope: guardian, root: 'user')
+          render_json_dump BasicUserSerializer.new(user, scope: guardian, root: "user")
         else
           render json: success_json
         end
@@ -678,19 +680,19 @@ class TopicsController < ApplicationController
             .join(", ")
 
           if group_names.present?
-            json.merge!(errors: [
+            json[:errors] = [
               I18n.t(
                 "topic_invite.failed_to_invite",
                 group_names: group_names
               )
-            ])
+            ]
           end
         end
 
         render json: json, status: 422
       end
     rescue Topic::UserExists, Topic::NotAllowed => e
-      render json: { errors: [e.message] }, status: 422
+      render json: {errors: [e.message]}, status: 422
     end
   end
 
@@ -836,24 +838,24 @@ class TopicsController < ApplicationController
   def feed
     @topic_view = TopicView.new(params[:topic_id])
     discourse_expires_in 1.minute
-    render 'topics/show', formats: [:rss]
+    render "topics/show", formats: [:rss]
   end
 
   def bulk
     if params[:topic_ids].present?
       topic_ids = params[:topic_ids].map { |t| t.to_i }
-    elsif params[:filter] == 'unread'
+    elsif params[:filter] == "unread"
       tq = TopicQuery.new(current_user)
       topics = TopicQuery.unread_filter(tq.joined_topic_user, current_user.id, staff: guardian.is_staff?).listable_topics
 
       if params[:category_id]
-        if params[:include_subcategories]
-          topics = topics.where(<<~SQL, category_id: params[:category_id])
+        topics = if params[:include_subcategories]
+          topics.where(<<~SQL, category_id: params[:category_id])
             category_id in (select id FROM categories WHERE parent_category_id = :category_id) OR
             category_id = :category_id
           SQL
         else
-          topics = topics.where('category_id = ?', params[:category_id])
+          topics.where("category_id = ?", params[:category_id])
         end
       end
       topic_ids = topics.pluck(:id)
@@ -875,7 +877,7 @@ class TopicsController < ApplicationController
   def reset_new
     if params[:category_id].present?
       category_ids = [params[:category_id]]
-      if params[:include_subcategories] == 'true'
+      if params[:include_subcategories] == "true"
         category_ids = category_ids.concat(Category.where(parent_category_id: params[:category_id]).pluck(:id))
       end
       category_ids.each do |category_id|
@@ -899,10 +901,10 @@ class TopicsController < ApplicationController
     topic = Topic.find_by(id: params[:id])
     guardian.ensure_can_convert_topic!(topic)
 
-    if params[:type] == "public"
-      converted_topic = topic.convert_to_public_topic(current_user, category_id: params[:category_id])
+    converted_topic = if params[:type] == "public"
+      topic.convert_to_public_topic(current_user, category_id: params[:category_id])
     else
-      converted_topic = topic.convert_to_private_message(current_user)
+      topic.convert_to_private_message(current_user)
     end
     render_topic_changes(converted_topic)
   rescue ActiveRecord::RecordInvalid => ex
@@ -932,7 +934,7 @@ class TopicsController < ApplicationController
 
   def fetch_topic_view(options)
     if (username_filters = params[:username_filters]).present?
-      options[:username_filters] = username_filters.split(',')
+      options[:username_filters] = username_filters.split(",")
     end
 
     @topic_view = TopicView.new(params[:topic_id], current_user, options)
@@ -976,19 +978,19 @@ class TopicsController < ApplicationController
   end
 
   def track_visit_to_topic
-    topic_id =  @topic_view.topic.id
+    topic_id = @topic_view.topic.id
     ip = request.remote_ip
-    user_id = (current_user.id if current_user)
+    user_id = current_user&.id
     track_visit = should_track_visit_to_topic?
 
-    if !request.format.json?
+    unless request.format.json?
       hash = {
         referer: request.referer || flash[:referer],
         host: request.host,
         current_user: current_user,
         topic_id: @topic_view.topic.id,
         post_number: @topic_view.current_post_number,
-        username: request['u'],
+        username: request["u"],
         ip_address: request.remote_ip
       }
       # defer this way so we do not capture the whole controller
@@ -1017,7 +1019,6 @@ class TopicsController < ApplicationController
   end
 
   def perform_show_response
-
     if request.head?
       head :ok
       return
@@ -1047,9 +1048,9 @@ class TopicsController < ApplicationController
 
   def render_topic_changes(dest_topic)
     if dest_topic.present?
-      render json: { success: true, url: dest_topic.relative_url }
+      render json: {success: true, url: dest_topic.relative_url}
     else
-      render json: { success: false }
+      render json: {success: false}
     end
   end
 
@@ -1070,7 +1071,7 @@ class TopicsController < ApplicationController
   end
 
   def check_for_status_presence(key, attr)
-    invalid_param(key) unless %w(pinned pinned_globally visible closed archived).include?(attr)
+    invalid_param(key) unless %w[pinned pinned_globally visible closed archived].include?(attr)
   end
 
   def invalid_param(key)

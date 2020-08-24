@@ -12,16 +12,15 @@ class StepsController < ApplicationController
     updater.update
 
     if updater.success?
-      result = { success: 'OK' }
+      result = {success: "OK"}
       result[:refresh_required] = true if updater.refresh_required?
       render json: result
     else
       errors = []
       updater.errors.messages.each do |field, msg|
-        errors << { field: field, description: msg.join }
+        errors << {field: field, description: msg.join}
       end
-      render json: { errors: errors }, status: 422
+      render json: {errors: errors}, status: 422
     end
   end
-
 end

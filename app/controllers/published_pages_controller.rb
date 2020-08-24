@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class PublishedPagesController < ApplicationController
-
   skip_before_action :preload_json
   skip_before_action :check_xhr, :verify_authenticity_token, only: [:show]
   before_action :ensure_publish_enabled
@@ -15,7 +14,7 @@ class PublishedPagesController < ApplicationController
 
     return if enforce_login_required!
 
-    if !pp.public
+    unless pp.public
       begin
         guardian.ensure_can_see!(pp.topic)
       rescue Discourse::InvalidAccess => e
@@ -36,7 +35,7 @@ class PublishedPagesController < ApplicationController
     @border_color = "#" + ColorScheme.base_colors["tertiary"]
 
     @body_classes = Set.new([
-      'published-page',
+      "published-page",
       params[:slug],
       "topic-#{@topic.id}",
       @topic.tags.pluck(:name)
@@ -46,7 +45,7 @@ class PublishedPagesController < ApplicationController
       @body_classes << @topic.category.slug
     end
 
-    render layout: 'publish'
+    render layout: "publish"
   end
 
   def details
@@ -77,13 +76,13 @@ class PublishedPagesController < ApplicationController
     pp = PublishedPage.new(topic: Topic.new, slug: params[:slug].strip)
 
     if pp.valid?
-      render json: { valid_slug: true }
+      render json: {valid_slug: true}
     else
-      render json: { valid_slug: false, reason: pp.errors.full_messages.first }
+      render json: {valid_slug: false, reason: pp.errors.full_messages.first}
     end
   end
 
-private
+  private
 
   def fetch_topic
     topic = Topic.find_by(id: params[:topic_id])
@@ -97,11 +96,10 @@ private
 
   def enforce_login_required!
     if SiteSetting.login_required? &&
-       !current_user &&
-       !SiteSetting.show_published_pages_login_required? &&
-      redirect_to_login
+        !current_user &&
+        !SiteSetting.show_published_pages_login_required? &&
+        redirect_to_login
       true
     end
   end
-
 end

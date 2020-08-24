@@ -37,7 +37,7 @@ class Admin::SiteSettingsController < Admin::AdminController
           new_value = UserOption.title_count_modes[new_value.to_sym]
         end
 
-        attrs = { user_option => new_value }
+        attrs = {user_option => new_value}
         attrs[:email_digests] = (new_value.to_i != 0) if id == "default_email_digest_frequency"
 
         UserOption.where(user_option => previous_value).update_all(attrs)
@@ -65,7 +65,7 @@ class Admin::SiteSettingsController < Admin::AdminController
 
           User.real.where(staged: false).where.not(id: skip_user_ids).select(:id).find_in_batches do |users|
             category_users = []
-            users.each { |user| category_users << { category_id: category_id, user_id: user.id, notification_level: notification_level } }
+            users.each { |user| category_users << {category_id: category_id, user_id: user.id, notification_level: notification_level} }
             CategoryUser.insert_all!(category_users)
           end
         end
@@ -92,7 +92,7 @@ class Admin::SiteSettingsController < Admin::AdminController
 
           User.real.where(staged: false).where.not(id: skip_user_ids).select(:id).find_in_batches do |users|
             tag_users = []
-            users.each { |user| tag_users << { tag_id: tag_id, user_id: user.id, notification_level: notification_level, created_at: now, updated_at: now } }
+            users.each { |user| tag_users << {tag_id: tag_id, user_id: user.id, notification_level: notification_level, created_at: now, updated_at: now} }
             TagUser.insert_all!(tag_users)
           end
         end
@@ -212,5 +212,4 @@ class Admin::SiteSettingsController < Admin::AdminController
       raise Discourse::InvalidParameters, "You are not allowed to change hidden settings"
     end
   end
-
 end

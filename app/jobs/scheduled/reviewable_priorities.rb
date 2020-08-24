@@ -14,7 +14,7 @@ class Jobs::ReviewablePriorities < ::Jobs::Scheduled
   end
 
   def execute(args)
-    return unless Reviewable.where('score > 0').count >= self.class.min_reviewables
+    return unless Reviewable.where("score > 0").count >= self.class.min_reviewables
 
     res = DB.query_single(<<~SQL, target_count: self.class.target_count)
       SELECT COALESCE(PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY score), 0.0) AS medium,

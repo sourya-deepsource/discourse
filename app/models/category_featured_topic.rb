@@ -4,7 +4,7 @@ class CategoryFeaturedTopic < ActiveRecord::Base
   belongs_to :category
   belongs_to :topic
 
-  NEXT_CATEGORY_ID_KEY = 'category-featured-topic:next-category-id'
+  NEXT_CATEGORY_ID_KEY = "category-featured-topic:next-category-id"
   DEFAULT_BATCH_SIZE = 100
 
   # Populates the category featured topics.
@@ -19,14 +19,14 @@ class CategoryFeaturedTopic < ActiveRecord::Base
     next_category_id = batched ? Discourse.redis.get(NEXT_CATEGORY_ID_KEY).to_i : 0
 
     categories = Category.select(:id, :topic_id, :num_featured_topics)
-      .where('id >= ?', next_category_id)
-      .order('id ASC')
+      .where("id >= ?", next_category_id)
+      .order("id ASC")
       .limit(batch_size)
       .to_a
 
     if batched
       if categories.length == batch_size
-        next_id = Category.where('id > ?', categories.last.id).order('id asc').limit(1).pluck(:id)[0]
+        next_id = Category.where("id > ?", categories.last.id).order("id asc").limit(1).pluck(:id)[0]
         next_id ? Discourse.redis.setex(NEXT_CATEGORY_ID_KEY, 1.day, next_id) : clear_batch!
       else
         clear_batch!
@@ -70,14 +70,11 @@ class CategoryFeaturedTopic < ActiveRecord::Base
 
     CategoryFeaturedTopic.transaction do
       CategoryFeaturedTopic.where(category_id: c.id).delete_all
-      if results
-        results.each_with_index do |topic_id, idx|
-          begin
-            c.category_featured_topics.create(topic_id: topic_id, rank: idx)
-          rescue PG::UniqueViolation
-            # If another process features this topic, just ignore it
-          end
-        end
+      # If another process features this topic, just ignore it
+      results&.each_with_index do |topic_id, idx|
+        c.category_featured_topics.create(topic_id: topic_id, rank: idx)
+      rescue PG::UniqueViolation
+        # If another process features this topic, just ignore it
       end
     end
   end

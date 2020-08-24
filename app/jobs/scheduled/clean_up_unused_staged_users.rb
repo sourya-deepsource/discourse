@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class CleanUpUnusedStagedUsers < ::Jobs::Scheduled
     every 1.day
 
@@ -16,18 +15,12 @@ module Jobs
         .where(staged: true, admin: false, moderator: false)
         .where("users.created_at < ?", clean_up_after_days.days.ago)
         .find_each do |user|
-
-        begin
-          destroyer.destroy(user, context: I18n.t("user.destroy_reasons.unused_staged_user"))
-        rescue => e
-          Discourse.handle_job_exception(e,
-            message: "Cleaning up unused staged user",
-            extra: { user_id: user.id }
-          )
-        end
+        destroyer.destroy(user, context: I18n.t("user.destroy_reasons.unused_staged_user"))
+      rescue => e
+        Discourse.handle_job_exception(e,
+          message: "Cleaning up unused staged user",
+          extra: {user_id: user.id})
       end
     end
-
   end
-
 end

@@ -1,29 +1,28 @@
 # frozen_string_literal: true
 
 class Admin::UsersController < Admin::AdminController
-
   before_action :fetch_user, only: [:suspend,
-                                    :unsuspend,
-                                    :log_out,
-                                    :revoke_admin,
-                                    :grant_admin,
-                                    :revoke_moderation,
-                                    :grant_moderation,
-                                    :approve,
-                                    :activate,
-                                    :deactivate,
-                                    :silence,
-                                    :unsilence,
-                                    :trust_level,
-                                    :trust_level_lock,
-                                    :add_group,
-                                    :remove_group,
-                                    :primary_group,
-                                    :anonymize,
-                                    :merge,
-                                    :reset_bounce_score,
-                                    :disable_second_factor,
-                                    :delete_posts_batch]
+    :unsuspend,
+    :log_out,
+    :revoke_admin,
+    :grant_admin,
+    :revoke_moderation,
+    :grant_moderation,
+    :approve,
+    :activate,
+    :deactivate,
+    :silence,
+    :unsilence,
+    :trust_level,
+    :trust_level_lock,
+    :add_group,
+    :remove_group,
+    :primary_group,
+    :anonymize,
+    :merge,
+    :reset_bounce_score,
+    :disable_second_factor,
+    :delete_posts_batch]
 
   def index
     users = ::AdminUserIndexQuery.new(params).find_users
@@ -47,12 +46,11 @@ class Admin::UsersController < Admin::AdminController
     deleted_posts = @user.delete_posts_in_batches(guardian)
     # staff action logs will have an entry for each post
 
-    render json: { posts_deleted: deleted_posts.length }
+    render json: {posts_deleted: deleted_posts.length}
   end
 
   # DELETE action to delete penalty history for a user
   def penalty_history
-
     # We don't delete any history, we merely remove the action type
     # with a removed type. It can still be viewed in the logs but
     # will not affect TL3 promotions.
@@ -166,7 +164,7 @@ class Admin::UsersController < Admin::AdminController
       @user.logged_out
       render json: success_json
     else
-      render json: { error: I18n.t('admin_js.admin.users.id_not_found') }, status: 404
+      render json: {error: I18n.t("admin_js.admin.users.id_not_found")}, status: 404
     end
   end
 
@@ -200,7 +198,7 @@ class Admin::UsersController < Admin::AdminController
     group = Group.find(params[:group_id].to_i)
 
     raise Discourse::NotFound unless group
-    return render_json_error(I18n.t('groups.errors.can_not_modify_automatic')) if group.automatic
+    return render_json_error(I18n.t("groups.errors.can_not_modify_automatic")) if group.automatic
 
     group.add(@user)
     GroupActionLogger.new(current_user, group).log_add_user_to_group(@user)
@@ -212,7 +210,7 @@ class Admin::UsersController < Admin::AdminController
     group = Group.find(params[:group_id].to_i)
 
     raise Discourse::NotFound unless group
-    return render_json_error(I18n.t('groups.errors.can_not_modify_automatic')) if group.automatic
+    return render_json_error(I18n.t("groups.errors.can_not_modify_automatic")) if group.automatic
 
     group.remove(@user)
     GroupActionLogger.new(current_user, group).log_remove_user_from_group(@user)
@@ -264,11 +262,11 @@ class Admin::UsersController < Admin::AdminController
     guardian.ensure_can_change_trust_level!(@user)
 
     new_lock = params[:locked].to_s
-    unless new_lock =~ /true|false/
-      return render_json_error I18n.t('errors.invalid_boolean')
+    unless /true|false/.match?(new_lock)
+      return render_json_error I18n.t("errors.invalid_boolean")
     end
 
-    @user.manual_locked_trust_level = (new_lock == "true") ? @user.trust_level : nil
+    @user.manual_locked_trust_level = new_lock == "true" ? @user.trust_level : nil
     @user.save
 
     StaffActionLogger.new(current_user).log_lock_trust_level(@user)
@@ -288,7 +286,7 @@ class Admin::UsersController < Admin::AdminController
   end
 
   def approve_bulk
-    Reviewable.bulk_perform_targets(current_user, :approve_user, 'ReviewableUser', params[:users])
+    Reviewable.bulk_perform_targets(current_user, :approve_user, "ReviewableUser", params[:users])
     render body: nil
   end
 
@@ -297,14 +295,14 @@ class Admin::UsersController < Admin::AdminController
     # ensure there is an active email token
     @user.email_tokens.create(email: @user.email) unless @user.email_tokens.active.exists?
     @user.activate
-    StaffActionLogger.new(current_user).log_user_activate(@user, I18n.t('user.activated_by_staff'))
+    StaffActionLogger.new(current_user).log_user_activate(@user, I18n.t("user.activated_by_staff"))
     render json: success_json
   end
 
   def deactivate
     guardian.ensure_can_deactivate!(@user)
     @user.deactivate(current_user)
-    StaffActionLogger.new(current_user).log_user_deactivate(@user, I18n.t('user.deactivated_by_staff'), params.slice(:context))
+    StaffActionLogger.new(current_user).log_user_deactivate(@user, I18n.t("user.deactivated_by_staff"), params.slice(:context))
     refresh_browser @user
     render json: success_json
   end
@@ -386,21 +384,19 @@ class Admin::UsersController < Admin::AdminController
     options[:prepare_for_destroy] = true
 
     hijack do
-      begin
-        if UserDestroyer.new(current_user).destroy(user, options)
-          render json: { deleted: true }
-        else
-          render json: {
-            deleted: false,
-            user: AdminDetailedUserSerializer.new(user, root: false).as_json
-          }
-        end
-      rescue UserDestroyer::PostsExistError
+      if UserDestroyer.new(current_user).destroy(user, options)
+        render json: {deleted: true}
+      else
         render json: {
           deleted: false,
-          message: "User #{user.username} has #{user.post_count} posts, so they can't be deleted."
-        }, status: 403
+          user: AdminDetailedUserSerializer.new(user, root: false).as_json
+        }
       end
+    rescue UserDestroyer::PostsExistError
+      render json: {
+        deleted: false,
+        message: "User #{user.username} has #{user.post_count} posts, so they can't be deleted."
+      }, status: 403
     end
   end
 
@@ -431,7 +427,7 @@ class Admin::UsersController < Admin::AdminController
     rescue ActiveRecord::RecordInvalid => ex
       render json: failed_json.merge(message: ex.message), status: 403
     rescue DiscourseSingleSignOn::BlankExternalId => ex
-      render json: failed_json.merge(message: I18n.t('sso.blank_id_error')), status: 422
+      render json: failed_json.merge(message: I18n.t("sso.blank_id_error")), status: 422
     end
   end
 
@@ -462,7 +458,7 @@ class Admin::UsersController < Admin::AdminController
     params.require(:exclude)
     params.require(:order)
 
-    render json: { total: AdminUserIndexQuery.new(params).count_users }
+    render json: {total: AdminUserIndexQuery.new(params).count_users}
   end
 
   def anonymize
@@ -480,7 +476,7 @@ class Admin::UsersController < Admin::AdminController
     raise Discourse::NotFound if target_user.blank?
 
     guardian.ensure_can_merge_users!(@user, target_user)
-    serializer_opts = { root: false, scope: guardian }
+    serializer_opts = {root: false, scope: guardian}
 
     if user = UserMerger.new(@user, target_user, current_user).merge!
       user_json = AdminDetailedUserSerializer.new(user, serializer_opts).as_json
@@ -504,17 +500,17 @@ class Admin::UsersController < Admin::AdminController
 
     if post = Post.where(id: params[:post_id]).first
       case params[:post_action]
-      when 'delete'
+      when "delete"
         PostDestroyer.new(current_user, post).destroy if guardian.can_delete_post_or_topic?(post)
       when "delete_replies"
         PostDestroyer.delete_with_replies(current_user, post) if guardian.can_delete_post_or_topic?(post)
-      when 'edit'
+      when "edit"
         revisor = PostRevisor.new(post)
 
         # Take what the moderator edited in as gospel
         revisor.revise!(
           current_user,
-          { raw:  params[:post_edit] },
+          {raw: params[:post_edit]},
           skip_validations: true,
           skip_revision: true
         )
@@ -530,5 +526,4 @@ class Admin::UsersController < Admin::AdminController
   def refresh_browser(user)
     MessageBus.publish "/file-change", ["refresh"], user_ids: [user.id]
   end
-
 end

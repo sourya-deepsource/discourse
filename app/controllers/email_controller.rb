@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class EmailController < ApplicationController
-  layout 'no_ember'
+  layout "no_ember"
 
   skip_before_action :check_xhr, :preload_json, :redirect_to_login_if_required
 
@@ -31,7 +31,7 @@ class EmailController < ApplicationController
           if @topic.category_id
             if CategoryUser.exists?(user_id: @user.id, notification_level: CategoryUser.watching_levels, category_id: @topic.category_id)
               @watched_count = TopicUser.joins(:topic)
-                .where(user: @user, notification_level: watching, "topics.category_id" => @topic.category_id)
+                .where(:user => @user, :notification_level => watching, "topics.category_id" => @topic.category_id)
                 .count
             end
           end
@@ -46,7 +46,7 @@ class EmailController < ApplicationController
     RateLimiter.new(nil, "unsubscribe_#{request.ip}", 10, 1.minute).performed!
 
     key = UnsubscribeKey.find_by(key: params[:key])
-    raise Discourse::NotFound unless key && key.user
+    raise Discourse::NotFound unless key&.user
 
     topic = key&.post&.topic || key.topic
     user = key.user
@@ -69,8 +69,7 @@ class EmailController < ApplicationController
 
         CategoryUser.where(user_id: user.id,
                            category_id: topic.category_id,
-                           notification_level: CategoryUser.watching_levels
-                         )
+                           notification_level: CategoryUser.watching_levels)
           .destroy_all
         updated = true
       end
@@ -87,8 +86,8 @@ class EmailController < ApplicationController
       updated = true
     end
 
-    if params['digest_after_minutes']
-      digest_frequency = params['digest_after_minutes'].to_i
+    if params["digest_after_minutes"]
+      digest_frequency = params["digest_after_minutes"].to_i
 
       user.user_option.update_columns(
         digest_after_minutes: digest_frequency,
@@ -105,9 +104,7 @@ class EmailController < ApplicationController
       updated = true
     end
 
-    unless updated
-      redirect_back fallback_location: path("/")
-    else
+    if updated
 
       key = "unsub_#{SecureRandom.hex}"
       Discourse.cache.write key, user.email, expires_in: 1.hour
@@ -118,8 +115,9 @@ class EmailController < ApplicationController
       end
 
       redirect_to url
+    else
+      redirect_back fallback_location: path("/")
     end
-
   end
 
   def unsubscribed
@@ -140,7 +138,7 @@ class EmailController < ApplicationController
     never = frequencies.delete_at(0)
     allowed_frequencies = %w[never weekly every_month every_six_months]
 
-    result = frequencies.reduce(frequencies: [], current: nil, selected: nil, take_next: false) do |memo, v|
+    result = frequencies.reduce(frequencies: [], current: nil, selected: nil, take_next: false) { |memo, v|
       memo[:current] = v[:name] if v[:value] == frequency_in_minutes && email_digests
       next(memo) unless allowed_frequencies.include?(v[:name])
 
@@ -149,7 +147,7 @@ class EmailController < ApplicationController
         m[:frequencies] << [I18n.t("unsubscribe.digest_frequency.#{v[:name]}"), v[:value]]
         m[:take_next] = !m[:take_next] && m[:current]
       end
-    end
+    }
 
     result.slice(:frequencies, :current, :selected).tap do |r|
       r[:frequencies] << [I18n.t("unsubscribe.digest_frequency.#{never[:name]}"), never[:value]]

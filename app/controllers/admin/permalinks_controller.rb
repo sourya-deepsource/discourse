@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::PermalinksController < Admin::AdminController
-
   before_action :fetch_permalink, only: [:destroy]
 
   def index
@@ -38,5 +37,4 @@ class Admin::PermalinksController < Admin::AdminController
   def fetch_permalink
     @permalink = Permalink.find(params[:id])
   end
-
 end

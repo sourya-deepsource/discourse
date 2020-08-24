@@ -8,16 +8,16 @@ class ExtraLocalesController < ApplicationController
     :redirect_to_login_if_required,
     :verify_authenticity_token
 
-  OVERRIDES_BUNDLE ||= 'overrides'
+  OVERRIDES_BUNDLE ||= "overrides"
   MD5_HASH_LENGTH ||= 32
 
   def show
     bundle = params[:bundle]
-    raise Discourse::InvalidAccess.new if !valid_bundle?(bundle)
+    raise Discourse::InvalidAccess.new unless valid_bundle?(bundle)
 
     version = params[:v]
     if version.present?
-      if version.kind_of?(String) && version.length == MD5_HASH_LENGTH
+      if version.is_a?(String) && version.length == MD5_HASH_LENGTH
         hash = ExtraLocalesController.bundle_js_hash(bundle)
         immutable_for(1.year) if hash == version
       else

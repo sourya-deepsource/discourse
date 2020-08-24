@@ -17,18 +17,18 @@ class DirectoryItemsController < ApplicationController
       guardian.ensure_can_see!(group)
       guardian.ensure_can_see_group_members!(group)
 
-      result = result.includes(user: :groups).where(users: { groups: { id: group.id } })
+      result = result.includes(user: :groups).where(users: {groups: {id: group.id}})
     else
       result = result.includes(user: :primary_group)
     end
 
     if params[:exclude_usernames]
-      result = result.references(:user).where.not(users: { username: params[:exclude_usernames].split(",") })
+      result = result.references(:user).where.not(users: {username: params[:exclude_usernames].split(",")})
     end
 
     order = params[:order] || DirectoryItem.headings.first
     if DirectoryItem.headings.include?(order.to_sym)
-      dir = params[:asc] ? 'ASC' : 'DESC'
+      dir = params[:asc] ? "ASC" : "DESC"
       result = result.order("directory_items.#{order} #{dir}")
     end
 
@@ -47,16 +47,16 @@ class DirectoryItemsController < ApplicationController
         end
         result = result.where(user_id: user_ids)
       else
-        result = result.where('false')
+        result = result.where("false")
       end
     end
 
     if params[:username]
       user_id = User.where(username_lower: params[:username].to_s.downcase).pluck_first(:id)
-      if user_id
-        result = result.where(user_id: user_id)
+      result = if user_id
+        result.where(user_id: user_id)
       else
-        result = result.where('false')
+        result.where("false")
       end
     end
 
@@ -84,10 +84,9 @@ class DirectoryItemsController < ApplicationController
     last_updated_at = DirectoryItem.last_updated_at(period_type)
     render_json_dump(directory_items: serialize_data(result, DirectoryItemSerializer),
                      meta: {
-                        last_updated_at: last_updated_at,
-                        total_rows_directory_items: result_count,
-                        load_more_directory_items: load_more_directory_items_json
-                      }
-                    )
+                       last_updated_at: last_updated_at,
+                       total_rows_directory_items: result_count,
+                       load_more_directory_items: load_more_directory_items_json
+                     })
   end
 end

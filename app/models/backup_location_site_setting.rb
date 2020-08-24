@@ -10,8 +10,8 @@ class BackupLocationSiteSetting < EnumSiteSetting
 
   def self.values
     @values ||= [
-      { name: "admin.backups.location.local", value: LOCAL },
-      { name: "admin.backups.location.s3", value: S3 }
+      {name: "admin.backups.location.local", value: LOCAL},
+      {name: "admin.backups.location.s3", value: S3}
     ]
   end
 

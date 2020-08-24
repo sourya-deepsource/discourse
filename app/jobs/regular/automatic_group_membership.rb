@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class AutomaticGroupMembership < ::Jobs::Base
-
     def execute(args)
       group_id = args[:group_id]
       raise Discourse::InvalidParameters.new(:group_id) if group_id.blank?
@@ -22,7 +20,5 @@ module Jobs
 
       Group.reset_counters(group.id, :group_users)
     end
-
   end
-
 end

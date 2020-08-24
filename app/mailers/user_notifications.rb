@@ -4,8 +4,8 @@ class UserNotifications < ActionMailer::Base
   include UserNotificationsHelper
   include ApplicationHelper
   helper :application, :email
-  default charset: 'UTF-8'
-  layout 'email_template'
+  default charset: "UTF-8"
+  layout "email_template"
 
   include Email::BuildEmailHelper
 
@@ -27,14 +27,14 @@ class UserNotifications < ActionMailer::Base
 
   def signup_after_approval(user, opts = {})
     locale = user_locale(user)
-    tips = I18n.t('system_messages.usage_tips.text_body_template',
-                  base_url: Discourse.base_url,
-                  locale: locale)
+    tips = I18n.t("system_messages.usage_tips.text_body_template",
+      base_url: Discourse.base_url,
+      locale: locale)
 
     build_email(user.email,
-                template: 'user_notifications.signup_after_approval',
-                locale: locale,
-                new_user_tips: tips)
+      template: "user_notifications.signup_after_approval",
+      locale: locale,
+      new_user_tips: tips)
   end
 
   def suspicious_login(user, opts = {})
@@ -49,7 +49,7 @@ class UserNotifications < ActionMailer::Base
       template: "user_notifications.suspicious_login",
       locale: user_locale(user),
       client_ip: opts[:client_ip],
-      location: location.present? ? location : I18n.t('staff_action_logs.unknown'),
+      location: location.present? ? location : I18n.t("staff_action_logs.unknown"),
       browser: I18n.t("user_auth_tokens.browser.#{browser}"),
       device: I18n.t("user_auth_tokens.device.#{device}"),
       os: I18n.t("user_auth_tokens.os.#{os}")
@@ -58,16 +58,16 @@ class UserNotifications < ActionMailer::Base
 
   def notify_old_email(user, opts = {})
     build_email(user.email,
-                template: "user_notifications.notify_old_email",
-                locale: user_locale(user),
-                new_email: opts[:new_email])
+      template: "user_notifications.notify_old_email",
+      locale: user_locale(user),
+      new_email: opts[:new_email])
   end
 
   def notify_old_email_add(user, opts = {})
     build_email(user.email,
-                template: "user_notifications.notify_old_email_add",
-                locale: user_locale(user),
-                new_email: opts[:new_email])
+      template: "user_notifications.notify_old_email_add",
+      locale: user_locale(user),
+      new_email: opts[:new_email])
   end
 
   def confirm_old_email(user, opts = {})
@@ -159,7 +159,7 @@ class UserNotifications < ActionMailer::Base
   def account_exists(user, opts = {})
     build_email(
       user.email,
-      template: 'user_notifications.account_exists',
+      template: "user_notifications.account_exists",
       locale: user_locale(user),
       email: user.email
     )
@@ -168,7 +168,7 @@ class UserNotifications < ActionMailer::Base
   def account_second_factor_disabled(user, opts = {})
     build_email(
       user.email,
-      template: 'user_notifications.account_second_factor_disabled',
+      template: "user_notifications.account_second_factor_disabled",
       locale: user_locale(user),
       email: user.email
     )
@@ -179,11 +179,11 @@ class UserNotifications < ActionMailer::Base
     min_date = opts[:since] || user.last_emailed_at || user.last_seen_at || 1.month.ago
 
     # Fetch some topics and posts to show
-    digest_opts = { limit: SiteSetting.digest_topics + SiteSetting.digest_other_topics, top_order: true }
+    digest_opts = {limit: SiteSetting.digest_topics + SiteSetting.digest_other_topics, top_order: true}
     topics_for_digest = Topic.for_digest(user, min_date, digest_opts).to_a
     if topics_for_digest.empty? && !user.user_option.try(:include_tl0_in_digests)
       # Find some topics from new users that are at least 24 hours old
-      topics_for_digest = Topic.for_digest(user, min_date, digest_opts.merge(include_tl0: true)).where('topics.created_at < ?', 24.hours.ago).to_a
+      topics_for_digest = Topic.for_digest(user, min_date, digest_opts.merge(include_tl0: true)).where("topics.created_at < ?", 24.hours.ago).to_a
     end
 
     @popular_topics = topics_for_digest[0, SiteSetting.digest_topics]
@@ -194,10 +194,10 @@ class UserNotifications < ActionMailer::Base
       @popular_posts = if SiteSetting.digest_posts > 0
         Post.order("posts.score DESC")
           .for_mailing_list(user, min_date)
-          .where('posts.post_type = ?', Post.types[:regular])
-          .where('posts.deleted_at IS NULL AND posts.hidden = false AND posts.user_deleted = false')
+          .where("posts.post_type = ?", Post.types[:regular])
+          .where("posts.deleted_at IS NULL AND posts.hidden = false AND posts.user_deleted = false")
           .where("posts.post_number > ? AND posts.score > ?", 1, ScoreCalculator.default_score_weights[:like_score] * 5.0)
-          .where('posts.created_at < ?', (SiteSetting.editing_grace_period || 0).seconds.ago)
+          .where("posts.created_at < ?", (SiteSetting.editing_grace_period || 0).seconds.ago)
           .limit(SiteSetting.digest_posts)
       else
         []
@@ -216,35 +216,35 @@ class UserNotifications < ActionMailer::Base
         # We used topics from new users instead, so count should match
         new_topics_count = topics_for_digest.size
       end
-      @counts = [{ label_key: 'user_notifications.digest.new_topics',
-                   value: new_topics_count,
-                   href: "#{Discourse.base_url}/new" }]
+      @counts = [{label_key: "user_notifications.digest.new_topics",
+                  value: new_topics_count,
+                  href: "#{Discourse.base_url}/new"}]
 
       # totalling unread notifications (which are low-priority only) and unread
       # PMs and bookmark reminder notifications, so the total is both unread low
       # and high priority PMs
       value = user.unread_notifications + user.unread_high_priority_notifications
-      @counts << { label_key: 'user_notifications.digest.unread_notifications', value: value, href: "#{Discourse.base_url}/my/notifications" } if value > 0
+      @counts << {label_key: "user_notifications.digest.unread_notifications", value: value, href: "#{Discourse.base_url}/my/notifications"} if value > 0
 
       if @counts.size < 3
         value = user.unread_notifications_of_type(Notification.types[:liked])
-        @counts << { label_key: 'user_notifications.digest.liked_received', value: value, href: "#{Discourse.base_url}/my/notifications" } if value > 0
+        @counts << {label_key: "user_notifications.digest.liked_received", value: value, href: "#{Discourse.base_url}/my/notifications"} if value > 0
       end
 
       if @counts.size < 3 && user.user_option.digest_after_minutes.to_i >= 1440
         value = summary_new_users_count(min_date)
-        @counts << { label_key: 'user_notifications.digest.new_users', value: value, href: "#{Discourse.base_url}/about" } if value > 0
+        @counts << {label_key: "user_notifications.digest.new_users", value: value, href: "#{Discourse.base_url}/about"} if value > 0
       end
 
       @last_seen_at = short_date(user.last_seen_at || user.created_at)
 
-      @preheader_text = I18n.t('user_notifications.digest.preheader', last_seen_at: @last_seen_at)
+      @preheader_text = I18n.t("user_notifications.digest.preheader", last_seen_at: @last_seen_at)
 
       opts = {
-        from_alias: I18n.t('user_notifications.digest.from', site_name: Email.site_title),
-        subject: I18n.t('user_notifications.digest.subject_template', email_prefix: @email_prefix, date: short_date(Time.now)),
+        from_alias: I18n.t("user_notifications.digest.from", site_name: Email.site_title),
+        subject: I18n.t("user_notifications.digest.subject_template", email_prefix: @email_prefix, date: short_date(Time.now)),
         add_unsubscribe_link: true,
-        unsubscribe_url: "#{Discourse.base_url}/email/unsubscribe/#{@unsubscribe_key}",
+        unsubscribe_url: "#{Discourse.base_url}/email/unsubscribe/#{@unsubscribe_key}"
       }
 
       build_email(user.email, opts)
@@ -309,7 +309,7 @@ class UserNotifications < ActionMailer::Base
     opts[:show_group_in_subject] = true if SiteSetting.group_in_subject
 
     # We use the 'user_posted' event when you are emailed a post in a PM.
-    opts[:notification_type] = 'posted'
+    opts[:notification_type] = "posted"
 
     notification_email(user, opts)
   end
@@ -343,8 +343,8 @@ class UserNotifications < ActionMailer::Base
       notification_type: "posted",
       notification_data_hash: {
         original_username: post.user.username,
-        topic_title: post.topic.title,
-      },
+        topic_title: post.topic.title
+      }
     }
     notification_email(user, opts)
   end
@@ -358,7 +358,7 @@ class UserNotifications < ActionMailer::Base
   def email_post_markdown(post, add_posted_by = false)
     result = +"#{post.with_secure_media? ? strip_secure_urls(post.raw) : post.raw}\n\n"
     if add_posted_by
-      result << "#{I18n.t('user_notifications.posted_by', username: post.username, post_date: post.created_at.strftime("%m/%d/%Y"))}\n\n"
+      result << "#{I18n.t("user_notifications.posted_by", username: post.username, post_date: post.created_at.strftime("%m/%d/%Y"))}\n\n"
     end
     result
   end
@@ -368,7 +368,7 @@ class UserNotifications < ActionMailer::Base
     raw.scan(Discourse::Utils::URI_REGEXP) { urls << $& }
 
     urls.each do |url|
-      if (url.start_with?(Discourse.store.s3_upload_host) && FileHelper.is_supported_media?(url))
+      if url.start_with?(Discourse.store.s3_upload_host) && FileHelper.is_supported_media?(url)
         raw = raw.sub(url, "<p class='secure-media-notice'>#{I18n.t("emails.secure_media_placeholder")}</p>")
       end
     end
@@ -378,7 +378,7 @@ class UserNotifications < ActionMailer::Base
 
   def self.get_context_posts(post, topic_user, user)
     if (user.user_option.email_previous_replies == UserOption.previous_replies_type[:never]) ||
-       SiteSetting.private_email?
+        SiteSetting.private_email?
       return []
     end
 
@@ -390,10 +390,10 @@ class UserNotifications < ActionMailer::Base
       .where(user_deleted: false)
       .where(hidden: false)
       .where(post_type: allowed_post_types)
-      .order('created_at desc')
+      .order("created_at desc")
       .limit(SiteSetting.email_posts_context)
 
-    if topic_user && topic_user.last_emailed_post_number && user.user_option.email_previous_replies == UserOption.previous_replies_type[:unless_emailed]
+    if topic_user&.last_emailed_post_number && user.user_option.email_previous_replies == UserOption.previous_replies_type[:unless_emailed]
       context_posts = context_posts.where("post_number > ?", topic_user.last_emailed_post_number)
     end
 
@@ -443,7 +443,7 @@ class UserNotifications < ActionMailer::Base
       title: topic_title,
       post: post,
       username: original_username,
-      from_alias: I18n.t('email_from', user_name: user_name, site_name: Email.site_title),
+      from_alias: I18n.t("email_from", user_name: user_name, site_name: Email.site_title),
       allow_reply_by_email: allow_reply_by_email,
       use_site_subject: opts[:use_site_subject],
       add_re_to_subject: opts[:add_re_to_subject],
@@ -495,7 +495,7 @@ class UserNotifications < ActionMailer::Base
       show_category_in_subject = category.name
 
       # subcategory case
-      if !category.parent_category_id.nil?
+      unless category.parent_category_id.nil?
         show_category_in_subject = "#{Category.where(id: category.parent_category_id).pluck_first(:name)}/#{show_category_in_subject}"
       end
     else
@@ -522,7 +522,7 @@ class UserNotifications < ActionMailer::Base
             "[#{group.name}] "
           end
         else
-          I18n.t('subject_pm')
+          I18n.t("subject_pm")
         end
 
       participants = ""
@@ -555,7 +555,7 @@ class UserNotifications < ActionMailer::Base
     context_posts = context_posts.to_a
 
     if context_posts.present?
-      context << +"-- \n*#{I18n.t('user_notifications.previous_discussion')}*\n"
+      context << +"-- \n*#{I18n.t("user_notifications.previous_discussion")}*\n"
       context_posts.each do |cp|
         context << email_post_markdown(cp, true)
       end
@@ -592,21 +592,20 @@ class UserNotifications < ActionMailer::Base
         topic_excerpt: topic_excerpt,
         site_title: SiteSetting.title,
         site_description: SiteSetting.site_description,
-        topic_url: topic_url
-      )
+        topic_url: topic_url)
 
       html = PrettyText.cook(message, sanitize: false).html_safe
     else
       reached_limit = SiteSetting.max_emails_per_day_per_user > 0
-      reached_limit &&= (EmailLog.where(user_id: user.id)
-                              .where('created_at > ?', 1.day.ago)
-                              .count) >= (SiteSetting.max_emails_per_day_per_user - 1)
+      reached_limit &&= EmailLog.where(user_id: user.id)
+        .where("created_at > ?", 1.day.ago)
+        .count >= (SiteSetting.max_emails_per_day_per_user - 1)
 
       in_reply_to_post = post.reply_to_post if user.user_option.email_in_reply_to
-      if SiteSetting.private_email?
-        message = I18n.t('system_messages.contents_hidden')
+      message = if SiteSetting.private_email?
+        I18n.t("system_messages.contents_hidden")
       else
-        message = email_post_markdown(post) + (reached_limit ? "\n\n#{I18n.t "user_notifications.reached_limit", count: SiteSetting.max_emails_per_day_per_user}" : "")
+        email_post_markdown(post) + (reached_limit ? "\n\n#{I18n.t "user_notifications.reached_limit", count: SiteSetting.max_emails_per_day_per_user}" : "")
       end
 
       first_footer_classes = "hilight"
@@ -616,15 +615,14 @@ class UserNotifications < ActionMailer::Base
 
       unless translation_override_exists
         html = UserNotificationRenderer.render(
-          template: 'email/notification',
+          template: "email/notification",
           format: :html,
-          locals: { context_posts: context_posts,
-                    reached_limit: reached_limit,
-                    post: post,
-                    in_reply_to_post: in_reply_to_post,
-                    classes: Rtl.new(user).css_class,
-                    first_footer_classes: first_footer_classes
-          }
+          locals: {context_posts: context_posts,
+                   reached_limit: reached_limit,
+                   post: post,
+                   in_reply_to_post: in_reply_to_post,
+                   classes: Rtl.new(user).css_class,
+                   first_footer_classes: first_footer_classes}
         )
       end
     end
@@ -684,14 +682,14 @@ class UserNotifications < ActionMailer::Base
   end
 
   def build_summary_for(user)
-    @site_name       = SiteSetting.email_prefix.presence || SiteSetting.title # used by I18n
-    @user            = user
-    @date            = short_date(Time.now)
-    @base_url        = Discourse.base_url
-    @email_prefix    = SiteSetting.email_prefix.presence || SiteSetting.title
-    @header_color    = ColorScheme.hex_for_name('header_primary')
-    @header_bgcolor  = ColorScheme.hex_for_name('header_background')
-    @anchor_color    = ColorScheme.hex_for_name('tertiary')
+    @site_name = SiteSetting.email_prefix.presence || SiteSetting.title # used by I18n
+    @user = user
+    @date = short_date(Time.now)
+    @base_url = Discourse.base_url
+    @email_prefix = SiteSetting.email_prefix.presence || SiteSetting.title
+    @header_color = ColorScheme.hex_for_name("header_primary")
+    @header_bgcolor = ColorScheme.hex_for_name("header_background")
+    @anchor_color = ColorScheme.hex_for_name("tertiary")
     @markdown_linker = MarkdownLinker.new(@base_url)
     @unsubscribe_key = UnsubscribeKey.create_key_for(@user, "digest")
     @disable_email_custom_styles = !SiteSetting.apply_custom_styles_to_digest
@@ -702,7 +700,7 @@ class UserNotifications < ActionMailer::Base
   end
 
   def summary_new_users_count(min_date)
-    min_date_str = min_date.is_a?(String) ? min_date : min_date.strftime('%Y-%m-%d')
+    min_date_str = min_date.is_a?(String) ? min_date : min_date.strftime("%Y-%m-%d")
     key = self.class.summary_new_users_count_key(min_date_str)
     ((count = Discourse.redis.get(key)) && count.to_i) || begin
       count = User.real.where(active: true, staged: false).not_suspended.where("created_at > ?", min_date_str).count

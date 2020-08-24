@@ -9,7 +9,7 @@ class DraftController < ApplicationController
     raise Discourse::NotFound.new if params[:draft_key].blank?
 
     seq = params[:sequence] || DraftSequence.current(current_user, params[:draft_key])
-    render json: { draft: Draft.get(current_user, params[:draft_key], seq), draft_sequence: seq }
+    render json: {draft: Draft.get(current_user, params[:draft_key], seq), draft_sequence: seq}
   end
 
   def update
@@ -25,7 +25,6 @@ class DraftController < ApplicationController
           params[:owner]
         )
       rescue Draft::OutOfSequence
-
         begin
           if !Draft.exists?(user_id: current_user.id, draft_key: params[:draft_key])
             Draft.set(
@@ -38,12 +37,11 @@ class DraftController < ApplicationController
           else
             raise Draft::OutOfSequence
           end
-
         rescue Draft::OutOfSequence
-          render_json_error I18n.t('draft.sequence_conflict_error.title'),
+          render_json_error I18n.t("draft.sequence_conflict_error.title"),
             status: 409,
             extras: {
-              description: I18n.t('draft.sequence_conflict_error.description')
+              description: I18n.t("draft.sequence_conflict_error.description")
             }
           return
         end
@@ -52,7 +50,7 @@ class DraftController < ApplicationController
     json = success_json.merge(draft_sequence: sequence)
 
     begin
-      data = JSON::parse(params[:data])
+      data = JSON.parse(params[:data])
     rescue JSON::ParserError
       raise Discourse::InvalidParameters.new(:data)
     end
@@ -81,5 +79,4 @@ class DraftController < ApplicationController
     end
     render json: success_json
   end
-
 end

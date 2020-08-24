@@ -4,10 +4,10 @@ module Skippable
   extend ActiveSupport::Concern
 
   def create_skipped_email_log(email_type:,
-                               to_address:,
-                               user_id:,
-                               post_id:,
-                               reason_type:)
+    to_address:,
+    user_id:,
+    post_id:,
+    reason_type:)
 
     attributes = {
       email_type: email_type,

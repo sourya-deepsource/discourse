@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 class Admin::EmailController < Admin::AdminController
-
   def index
-    data = { delivery_method: delivery_method, settings: delivery_settings }
+    data = {delivery_method: delivery_method, settings: delivery_settings}
     render_json_dump(data)
   end
 
@@ -13,9 +12,9 @@ class Admin::EmailController < Admin::AdminController
       message = TestMailer.send_test(params[:email_address])
       Email::Sender.new(message, :test_message).send
 
-      render json: { sent_test_email_message: I18n.t("admin.email.sent_test") }
+      render json: {sent_test_email_message: I18n.t("admin.email.sent_test")}
     rescue => e
-      render json: { errors: [e.message] }, status: 422
+      render json: {errors: [e.message]}, status: 422
     end
   end
 
@@ -42,16 +41,16 @@ class Admin::EmailController < Admin::AdminController
 
     email_logs = email_logs.to_a
 
-    tuples = email_logs.map do |email_log|
+    tuples = email_logs.map { |email_log|
       [email_log.post_id, email_log.user_id]
-    end
+    }
 
     reply_keys = {}
 
     if tuples.present?
       PostReplyKey
         .where(
-          "(post_id,user_id) IN (#{(['(?)'] * tuples.size).join(', ')})",
+          "(post_id,user_id) IN (#{(["(?)"] * tuples.size).join(", ")})",
           *tuples
         )
         .pluck(:post_id, :user_id, "reply_key::text")
@@ -96,7 +95,7 @@ class Admin::EmailController < Admin::AdminController
   def advanced_test
     params.require(:email)
 
-    receiver = Email::Receiver.new(params['email'])
+    receiver = Email::Receiver.new(params["email"])
     text, elided, format = receiver.select_body
 
     render json: success_json.merge!(
@@ -113,8 +112,7 @@ class Admin::EmailController < Admin::AdminController
     user = User.find_by_username(params[:username])
 
     message, skip_reason = UserNotifications.public_send(:digest, user,
-      since: params[:last_seen_at]
-    )
+      since: params[:last_seen_at])
 
     if message
       message.to = params[:email]
@@ -122,10 +120,10 @@ class Admin::EmailController < Admin::AdminController
         Email::Sender.new(message, :digest).send
         render json: success_json
       rescue => e
-        render json: { errors: [e.message] }, status: 422
+        render json: {errors: [e.message]}, status: 422
       end
     else
-      render json: { errors: skip_reason }
+      render json: {errors: skip_reason}
     end
   end
 
@@ -134,11 +132,11 @@ class Admin::EmailController < Admin::AdminController
     params.require(:to)
     # These strings aren't localized; they are sent to an anonymous SMTP user.
     if !User.with_email(Email.downcase(params[:from])).exists? && !SiteSetting.enable_staged_users
-      render json: { reject: true, reason: "Mail from your address is not accepted. Do you have an account here?" }
+      render json: {reject: true, reason: "Mail from your address is not accepted. Do you have an account here?"}
     elsif Email::Receiver.check_address(Email.downcase(params[:to])).nil?
-      render json: { reject: true, reason: "Mail to this address is not accepted. Check the address and try to send again?" }
+      render json: {reject: true, reason: "Mail to this address is not accepted. Check the address and try to send again?"}
     else
-      render json: { reject: false }
+      render json: {reject: false}
     end
   end
 
@@ -150,7 +148,7 @@ class Admin::EmailController < Admin::AdminController
       Jobs.enqueue(:process_email, mail: params[:email], retry_on_rate_limit: true)
     rescue JSON::GeneratorError => e
       if retry_count == 0
-        params[:email] = params[:email].force_encoding('iso-8859-1').encode("UTF-8")
+        params[:email] = params[:email].force_encoding("iso-8859-1").encode("UTF-8")
         retry_count += 1
         retry
       else
@@ -165,7 +163,7 @@ class Admin::EmailController < Admin::AdminController
     params.require(:id)
     incoming_email = IncomingEmail.find(params[:id].to_i)
     text, html = Email.extract_parts(incoming_email.raw)
-    render json: { raw_email: incoming_email.raw, text_part: text, html_part: html }
+    render json: {raw_email: incoming_email.raw, text_part: text, html_part: html}
   end
 
   def incoming
@@ -188,7 +186,7 @@ class Admin::EmailController < Admin::AdminController
       end
 
       if incoming_email.nil?
-        email_local_part, email_domain = SiteSetting.notification_email.split('@')
+        email_local_part, email_domain = SiteSetting.notification_email.split("@")
         bounced_to_address = "#{email_local_part}+verp-#{email_log.bounce_key}@#{email_domain}"
         incoming_email = IncomingEmail.find_by(to_addresses: bounced_to_address)
       end
@@ -198,7 +196,7 @@ class Admin::EmailController < Admin::AdminController
       serializer = IncomingEmailDetailsSerializer.new(incoming_email, root: false)
       render_json_dump(serializer)
     rescue => e
-      render json: { errors: [e.message] }, status: 404
+      render json: {errors: [e.message]}, status: 404
     end
   end
 
@@ -236,7 +234,7 @@ class Admin::EmailController < Admin::AdminController
   def delivery_settings
     action_mailer_settings
       .reject { |k, _| k == :password }
-      .map    { |k, v| { name: k, value: v } }
+      .map { |k, v| {name: k, value: v} }
   end
 
   def delivery_method

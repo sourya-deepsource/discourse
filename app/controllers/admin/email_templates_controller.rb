@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::EmailTemplatesController < Admin::AdminController
-
   def self.email_keys
     @email_keys ||= [
       "custom_invite_forum_mailer",
@@ -63,7 +62,7 @@ class Admin::EmailTemplatesController < Admin::AdminController
       "user_notifications.user_posted",
       "user_notifications.user_posted_pm",
       "user_notifications.user_quoted",
-      "user_notifications.user_replied",
+      "user_notifications.user_replied"
     ]
   end
 
@@ -90,7 +89,7 @@ class Admin::EmailTemplatesController < Admin::AdminController
       log_site_text_change(subject_result)
       log_site_text_change(body_result)
 
-      render_serialized(key, AdminEmailTemplateSerializer, root: 'email_template', rest_serializer: true)
+      render_serialized(key, AdminEmailTemplateSerializer, root: "email_template", rest_serializer: true)
     else
       TranslationOverride.upsert!(I18n.locale, "#{key}.subject_template", subject_result[:old_value])
       TranslationOverride.upsert!(I18n.locale, "#{key}.text_body_template", body_result[:old_value])
@@ -104,11 +103,11 @@ class Admin::EmailTemplatesController < Admin::AdminController
     raise Discourse::NotFound unless self.class.email_keys.include?(params[:id])
 
     revert_and_log("#{key}.subject_template", "#{key}.text_body_template")
-    render_serialized(key, AdminEmailTemplateSerializer, root: 'email_template', rest_serializer: true)
+    render_serialized(key, AdminEmailTemplateSerializer, root: "email_template", rest_serializer: true)
   end
 
   def index
-    render_serialized(self.class.email_keys, AdminEmailTemplateSerializer, root: 'email_templates', rest_serializer: true, overridden_keys: overridden_keys)
+    render_serialized(self.class.email_keys, AdminEmailTemplateSerializer, root: "email_templates", rest_serializer: true, overridden_keys: overridden_keys)
   end
 
   private
@@ -143,7 +142,8 @@ class Admin::EmailTemplatesController < Admin::AdminController
   def log_site_text_change(update_result)
     new_value = I18n.t(update_result[:key])
     StaffActionLogger.new(current_user).log_site_text_change(
-      update_result[:key], new_value, update_result[:old_value])
+      update_result[:key], new_value, update_result[:old_value]
+    )
   end
 
   def format_error_message(update_result, attribute_key)

@@ -5,20 +5,20 @@ class ApiKey < ActiveRecord::Base
 
   has_many :api_key_scopes
   belongs_to :user
-  belongs_to :created_by, class_name: 'User'
+  belongs_to :created_by, class_name: "User"
 
   scope :active, -> { where("revoked_at IS NULL") }
   scope :revoked, -> { where("revoked_at IS NOT NULL") }
 
   scope :with_key, ->(key) {
-                     hashed = self.hash_key(key)
+                     hashed = hash_key(key)
                      where(key_hash: hashed)
                    }
 
   after_initialize :generate_key
 
   def generate_key
-    if !self.key_hash
+    unless key_hash
       @key ||= SecureRandom.hex(32) # Not saved to DB
       self.truncated_key = key[0..3]
       self.key_hash = ApiKey.hash_key(key)
@@ -41,9 +41,8 @@ class ApiKey < ActiveRecord::Base
   def self.revoke_unused_keys!
     return if SiteSetting.revoke_api_keys_days == 0 # Never expire keys
     to_revoke = active.where("GREATEST(last_used_at, created_at, updated_at, :epoch) < :threshold",
-                  epoch: last_used_epoch,
-                  threshold: SiteSetting.revoke_api_keys_days.days.ago
-                )
+      epoch: last_used_epoch,
+      threshold: SiteSetting.revoke_api_keys_days.days.ago)
 
     to_revoke.find_each do |api_key|
       ApiKey.transaction do
@@ -53,7 +52,8 @@ class ApiKey < ActiveRecord::Base
           api_key,
           UserHistory.actions[:api_key_update],
           changes: api_key.saved_changes,
-          context: I18n.t("staff_action_logs.api_key.automatic_revoked", count: SiteSetting.revoke_api_keys_days))
+          context: I18n.t("staff_action_logs.api_key.automatic_revoked", count: SiteSetting.revoke_api_keys_days)
+        )
       end
     end
   end

@@ -43,9 +43,9 @@ module Jobs
 
     def format_measure
       result = +"EnsureDbConsitency Times\n"
-      result << @measure_times.map do |name, duration|
+      result << @measure_times.map { |name, duration|
         "  #{name}: #{duration}"
-      end.join("\n")
+      }.join("\n")
       result
     end
 
@@ -61,6 +61,5 @@ module Jobs
       end
       @measure_start = @measure_now
     end
-
   end
 end

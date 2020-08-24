@@ -1,21 +1,20 @@
 # frozen_string_literal: true
 
 class Admin::RobotsTxtController < Admin::AdminController
-
   def show
-    render json: { robots_txt: current_robots_txt, overridden: @overridden }
+    render json: {robots_txt: current_robots_txt, overridden: @overridden}
   end
 
   def update
     params.require(:robots_txt)
     SiteSetting.overridden_robots_txt = params[:robots_txt]
 
-    render json: { robots_txt: current_robots_txt, overridden: @overridden }
+    render json: {robots_txt: current_robots_txt, overridden: @overridden}
   end
 
   def reset
     SiteSetting.overridden_robots_txt = ""
-    render json: { robots_txt: original_robots_txt, overridden: false }
+    render json: {robots_txt: original_robots_txt, overridden: false}
   end
 
   private

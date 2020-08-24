@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'current_user'
+require "current_user"
 
 class ApplicationController < ActionController::Base
   include CurrentUser
@@ -41,10 +41,10 @@ class ApplicationController < ActionController::Base
   before_action :preload_json
   before_action :add_noindex_header, if: -> { is_feed_request? || !SiteSetting.allow_index_in_robots_txt }
   before_action :check_xhr
-  after_action  :add_readonly_header
-  after_action  :perform_refresh_session
-  after_action  :dont_cache_page
-  after_action  :conditionally_allow_site_embedding
+  after_action :add_readonly_header
+  after_action :perform_refresh_session
+  after_action :dont_cache_page
+  after_action :conditionally_allow_site_embedding
 
   layout :set_layout
 
@@ -55,8 +55,8 @@ class ApplicationController < ActionController::Base
   def use_crawler_layout?
     @use_crawler_layout ||=
       request.user_agent &&
-      (request.content_type.blank? || request.content_type.include?('html')) &&
-      !['json', 'rss'].include?(params[:format]) &&
+      (request.content_type.blank? || request.content_type.include?("html")) &&
+      !["json", "rss"].include?(params[:format]) &&
       (has_escaped_fragment? || params.key?("print") ||
       CrawlerDetection.crawler?(request.user_agent, request.headers["HTTP_VIA"])
       )
@@ -81,7 +81,7 @@ class ApplicationController < ActionController::Base
 
   def conditionally_allow_site_embedding
     if SiteSetting.allow_embedding_site_in_an_iframe
-      response.headers.delete('X-Frame-Options')
+      response.headers.delete("X-Frame-Options")
     end
   end
 
@@ -93,14 +93,14 @@ class ApplicationController < ActionController::Base
       return "crawler"
     end
 
-    use_crawler_layout? ? 'crawler' : 'application'
+    use_crawler_layout? ? "crawler" : "application"
   end
 
   class RenderEmpty < StandardError; end
   class PluginDisabled < StandardError; end
 
   rescue_from RenderEmpty do
-    with_resolved_locale { render 'default/empty' }
+    with_resolved_locale { render "default/empty" }
   end
 
   rescue_from ArgumentError do |e|
@@ -121,13 +121,13 @@ class ApplicationController < ActionController::Base
     render_json_error e.message, status: 400
   end
 
-  rescue_from ActionController::RoutingError, PluginDisabled  do
+  rescue_from ActionController::RoutingError, PluginDisabled do
     rescue_discourse_actions(:not_found, 404)
   end
 
   # Handles requests for giant IDs that throw pg exceptions
   rescue_from ActiveModel::RangeError do |e|
-    if e.message =~ /ActiveModel::Type::Integer/
+    if /ActiveModel::Type::Integer/.match?(e.message)
       rescue_discourse_actions(:not_found, 404)
     else
       raise e
@@ -135,7 +135,7 @@ class ApplicationController < ActionController::Base
   end
 
   rescue_from ActiveRecord::RecordInvalid do |e|
-    if request.format && request.format.json?
+    if request.format&.json?
       render_json_error e, type: :record_invalid, status: 422
     else
       raise e
@@ -155,13 +155,13 @@ class ApplicationController < ActionController::Base
       e.description,
       type: :rate_limit,
       status: 429,
-      extras: { wait_seconds: retry_time_in_seconds },
-      headers: { 'Retry-After': retry_time_in_seconds },
+      extras: {wait_seconds: retry_time_in_seconds},
+      headers: {'Retry-After': retry_time_in_seconds}
     )
   end
 
   rescue_from Discourse::NotLoggedIn do |e|
-    if (request.format && request.format.json?) || request.xhr? || !request.get?
+    if request.format&.json? || request.xhr? || !request.get?
       rescue_discourse_actions(:not_logged_in, 403, include_ember: true)
     else
       rescue_discourse_actions(:not_found, 404)
@@ -169,8 +169,8 @@ class ApplicationController < ActionController::Base
   end
 
   rescue_from Discourse::InvalidParameters do |e|
-    message = I18n.t('invalid_params', message: e.message)
-    if (request.format && request.format.json?) || request.xhr? || !request.get?
+    message = I18n.t("invalid_params", message: e.message)
+    if request.format&.json? || request.xhr? || !request.get?
       rescue_discourse_actions(:invalid_parameters, 400, include_ember: true, custom_message_translated: message)
     else
       rescue_discourse_actions(:not_found, 400, custom_message_translated: message)
@@ -203,13 +203,13 @@ class ApplicationController < ActionController::Base
 
   rescue_from Discourse::ReadOnly do
     unless response_body
-      render_json_error I18n.t('read_only_mode_enabled'), type: :read_only, status: 503
+      render_json_error I18n.t("read_only_mode_enabled"), type: :read_only, status: 503
     end
   end
 
   def redirect_with_client_support(url, options)
     if request.xhr?
-      response.headers['Discourse-Xhr-Redirect'] = 'true'
+      response.headers["Discourse-Xhr-Redirect"] = "true"
       render plain: url
     else
       redirect_to url, options
@@ -218,9 +218,9 @@ class ApplicationController < ActionController::Base
 
   def rescue_discourse_actions(type, status_code, opts = nil)
     opts ||= {}
-    show_json_errors = (request.format && request.format.json?) ||
-                       (request.xhr?) ||
-                       ((params[:external_id] || '').ends_with? '.json')
+    show_json_errors = request.format&.json? ||
+      request.xhr? ||
+      ((params[:external_id] || "").ends_with? ".json")
 
     if type == :not_found && opts[:check_permalinks]
       url = opts[:original_path] || request.fullpath
@@ -243,23 +243,23 @@ class ApplicationController < ActionController::Base
         title = message = I18n.t(opts[:custom_message])
       else
         message = I18n.t(type)
-        if status_code == 403
-          title = I18n.t("page_forbidden.title")
+        title = if status_code == 403
+          I18n.t("page_forbidden.title")
         else
-          title = I18n.t("page_not_found.title")
+          I18n.t("page_not_found.title")
         end
       end
     end
 
-    error_page_opts = { title: title, status: status_code, group: opts[:group] }
+    error_page_opts = {title: title, status: status_code, group: opts[:group]}
 
     if show_json_errors
-      opts = { type: type, status: status_code }
+      opts = {type: type, status: status_code}
 
       with_resolved_locale(check_current_user: false) do
         # Include error in HTML format for topics#show.
-        if (request.params[:controller] == 'topics' && request.params[:action] == 'show') || (request.params[:controller] == 'categories' && request.params[:action] == 'find_by_slug')
-          opts[:extras] = { html: build_not_found_page(error_page_opts) }
+        if (request.params[:controller] == "topics" && request.params[:action] == "show") || (request.params[:controller] == "categories" && request.params[:action] == "find_by_slug")
+          opts[:extras] = {html: build_not_found_page(error_page_opts)}
         end
       end
 
@@ -273,7 +273,7 @@ class ApplicationController < ActionController::Base
         return render plain: message, status: status_code
       end
       with_resolved_locale do
-        error_page_opts[:layout] = opts[:include_ember] ? 'application' : 'no_ember'
+        error_page_opts[:layout] = opts[:include_ember] ? "application" : "no_ember"
         render html: build_not_found_page(error_page_opts)
       end
     end
@@ -298,8 +298,8 @@ class ApplicationController < ActionController::Base
   def clear_notifications
     if current_user && !@readonly_mode
 
-      cookie_notifications = cookies['cn']
-      notifications = request.headers['Discourse-Clear-Notifications']
+      cookie_notifications = cookies["cn"]
+      notifications = request.headers["Discourse-Clear-Notifications"]
 
       if cookie_notifications
         if notifications.present?
@@ -316,23 +316,23 @@ class ApplicationController < ActionController::Base
         current_user.publish_notifications_state
         cookie_args = {}
         cookie_args[:path] = Discourse.base_uri if Discourse.base_uri.present?
-        cookies.delete('cn', cookie_args)
+        cookies.delete("cn", cookie_args)
       end
     end
   end
 
   def with_resolved_locale(check_current_user: true)
-    if check_current_user && current_user
-      locale = current_user.effective_locale
+    locale = if check_current_user && current_user
+      current_user.effective_locale
     else
       if SiteSetting.set_locale_from_accept_language_header
-        locale = locale_from_header
+        locale_from_header
       else
-        locale = SiteSetting.default_locale
+        SiteSetting.default_locale
       end
     end
 
-    if !I18n.locale_available?(locale)
+    unless I18n.locale_available?(locale)
       locale = SiteSettings::DefaultsProvider::DEFAULT_LOCALE
     end
 
@@ -432,7 +432,7 @@ class ApplicationController < ActionController::Base
 
   def serialize_data(obj, serializer, opts = nil)
     # If it's an array, apply the serializer as an each_serializer to the elements
-    serializer_opts = { scope: guardian }.merge!(opts || {})
+    serializer_opts = {scope: guardian}.merge!(opts || {})
     if obj.respond_to?(:to_ary)
       serializer_opts[:each_serializer] = serializer
       ActiveModel::ArraySerializer.new(obj.to_ary, serializer_opts).as_json
@@ -452,13 +452,13 @@ class ApplicationController < ActionController::Base
   def render_json_dump(obj, opts = nil)
     opts ||= {}
     if opts[:rest_serializer]
-      obj['__rest_serializer'] = "1"
+      obj["__rest_serializer"] = "1"
       opts.each do |k, v|
         obj[k] = v if k.to_s.start_with?("refresh_")
       end
 
-      obj['extras'] = opts[:extras] if opts[:extras]
-      obj['meta'] = opts[:meta] if opts[:meta]
+      obj["extras"] = opts[:extras] if opts[:extras]
+      obj["meta"] = opts[:meta] if opts[:meta]
     end
 
     render json: MultiJson.dump(obj), status: opts[:status] || 200
@@ -477,14 +477,14 @@ class ApplicationController < ActionController::Base
   def fetch_user_from_params(opts = nil, eager_load = [])
     opts ||= {}
     user = if params[:username]
-      username_lower = params[:username].downcase.chomp('.json')
-      find_opts = { username_lower: username_lower }
+      username_lower = params[:username].downcase.chomp(".json")
+      find_opts = {username_lower: username_lower}
       find_opts[:active] = true unless opts[:include_inactive] || current_user.try(:staff?)
       result = User
-      (result = result.includes(*eager_load)) if !eager_load.empty?
+      (result = result.includes(*eager_load)) unless eager_load.empty?
       result.find_by(find_opts)
     elsif params[:external_id]
-      external_id = params[:external_id].chomp('.json')
+      external_id = params[:external_id].chomp(".json")
       SingleSignOnRecord.find_by(external_id: external_id).try(:user)
     end
     raise Discourse::NotFound if user.blank?
@@ -494,7 +494,7 @@ class ApplicationController < ActionController::Base
   end
 
   def post_ids_including_replies
-    post_ids  = params[:post_ids].map(&:to_i)
+    post_ids = params[:post_ids].map(&:to_i)
     post_ids |= PostReply.where(post_id: params[:reply_post_ids]).pluck(:reply_post_id) if params[:reply_post_ids]
     post_ids
   end
@@ -502,7 +502,7 @@ class ApplicationController < ActionController::Base
   def no_cookies
     # do your best to ensure response has no cookies
     # longer term we may want to push this into middleware
-    headers.delete 'Set-Cookie'
+    headers.delete "Set-Cookie"
     request.session_options[:skip] = true
   end
 
@@ -512,7 +512,7 @@ class ApplicationController < ActionController::Base
 
   def handle_permalink(path)
     permalink = Permalink.find_by_url(path)
-    if permalink && permalink.target_url
+    if permalink&.target_url
       redirect_to permalink.target_url, status: :moved_permanently
     end
   end
@@ -545,8 +545,8 @@ class ApplicationController < ActionController::Base
     data =
       if @theme_ids.present?
         {
-         top: Theme.lookup_field(@theme_ids, target, "after_header"),
-         footer: Theme.lookup_field(@theme_ids, target, "footer")
+          top: Theme.lookup_field(@theme_ids, target, "after_header"),
+          footer: Theme.lookup_field(@theme_ids, target, "footer")
         }
       else
         {}
@@ -558,7 +558,7 @@ class ApplicationController < ActionController::Base
 
     DiscoursePluginRegistry.html_builders.each do |name, _|
       if name.start_with?("client:")
-        data[name.sub(/^client:/, '')] = DiscoursePluginRegistry.build_html(name, self)
+        data[name.sub(/^client:/, "")] = DiscoursePluginRegistry.build_html(name, self)
       end
     end
 
@@ -594,7 +594,7 @@ class ApplicationController < ActionController::Base
   #   status  - HTTP status code to return
   #   headers - extra headers for the response
   def render_json_error(obj, opts = {})
-    opts = { status: opts } if opts.is_a?(Integer)
+    opts = {status: opts} if opts.is_a?(Integer)
     opts.fetch(:headers, {}).each { |name, value| headers[name.to_s] = value }
 
     render(
@@ -610,11 +610,11 @@ class ApplicationController < ActionController::Base
   end
 
   def success_json
-    { success: 'OK' }
+    {success: "OK"}
   end
 
   def failed_json
-    { failed: 'FAILED' }
+    {failed: "FAILED"}
   end
 
   def json_result(obj, opts = {})
@@ -630,10 +630,10 @@ class ApplicationController < ActionController::Base
     else
       error_obj = nil
       if opts[:additional_errors]
-        error_target = opts[:additional_errors].find do |o|
+        error_target = opts[:additional_errors].find { |o|
           target = obj.public_send(o)
           target && target.errors.present?
-        end
+        }
         error_obj = obj.public_send(error_target) if error_target
       end
       render_json_error(error_obj || obj)
@@ -652,15 +652,15 @@ class ApplicationController < ActionController::Base
   def check_xhr
     # bypass xhr check on PUT / POST / DELETE provided api key is there, otherwise calling api is annoying
     return if !request.get? && (is_api? || is_user_api?)
-    raise ApplicationController::RenderEmpty.new unless ((request.format && request.format.json?) || request.xhr?)
+    raise ApplicationController::RenderEmpty.new unless request.format&.json? || request.xhr?
   end
 
   def self.requires_login(arg = {})
     @requires_login_arg = arg
   end
 
-  def self.requires_login_arg
-    @requires_login_arg
+  class << self
+    attr_reader :requires_login_arg
   end
 
   def block_if_requires_login
@@ -682,11 +682,11 @@ class ApplicationController < ActionController::Base
   end
 
   def ensure_staff
-    raise Discourse::InvalidAccess.new unless current_user && current_user.staff?
+    raise Discourse::InvalidAccess.new unless current_user&.staff?
   end
 
   def ensure_admin
-    raise Discourse::InvalidAccess.new unless current_user && current_user.admin?
+    raise Discourse::InvalidAccess.new unless current_user&.admin?
   end
 
   def ensure_wizard_enabled
@@ -694,7 +694,7 @@ class ApplicationController < ActionController::Base
   end
 
   def destination_url
-    request.original_url unless request.original_url =~ /uploads/
+    request.original_url unless /uploads/.match?(request.original_url)
   end
 
   def redirect_to_login
@@ -703,7 +703,7 @@ class ApplicationController < ActionController::Base
     if SiteSetting.enable_sso?
       # save original URL in a session so we can redirect after login
       session[:destination_url] = destination_url
-      redirect_to path('/session/sso')
+      redirect_to path("/session/sso")
     elsif !SiteSetting.enable_local_logins && Discourse.enabled_authenticators.length == 1 && !cookies[:authentication_data]
       # Only one authentication provider, direct straight to it.
       # If authentication_data is present, then we are halfway though registration. Don't redirect offsite
@@ -724,8 +724,8 @@ class ApplicationController < ActionController::Base
     # - request uses a valid public key and auth_redirect scheme
     # - one_time_password scope is allowed
     if !current_user &&
-      params.has_key?(:user_api_public_key) &&
-      params.has_key?(:auth_redirect)
+        params.has_key?(:user_api_public_key) &&
+        params.has_key?(:auth_redirect)
       begin
         OpenSSL::PKey::RSA.new(params[:user_api_public_key])
       rescue OpenSSL::PKey::RSAError
@@ -748,11 +748,11 @@ class ApplicationController < ActionController::Base
       return
     end
 
-    return if !current_user
-    return if !should_enforce_2fa?
+    return unless current_user
+    return unless should_enforce_2fa?
 
     redirect_path = path("/u/#{current_user.encoded_username}/preferences/second-factor")
-    if !request.fullpath.start_with?(redirect_path)
+    unless request.fullpath.start_with?(redirect_path)
       redirect_to path(redirect_path)
       nil
     end
@@ -760,22 +760,26 @@ class ApplicationController < ActionController::Base
 
   def should_enforce_2fa?
     disqualified_from_2fa_enforcement = request.format.json? || is_api? || current_user.anonymous?
-    enforcing_2fa = ((SiteSetting.enforce_second_factor == 'staff' && current_user.staff?) || SiteSetting.enforce_second_factor == 'all')
+    enforcing_2fa = ((SiteSetting.enforce_second_factor == "staff" && current_user.staff?) || SiteSetting.enforce_second_factor == "all")
     !disqualified_from_2fa_enforcement && enforcing_2fa && !current_user.has_any_second_factor_methods_enabled?
   end
 
   def block_if_readonly_mode
-    return if request.fullpath.start_with?(path "/admin/backups")
+    return if request.fullpath.start_with?(path("/admin/backups"))
     raise Discourse::ReadOnly.new if !(request.get? || request.head?) && @readonly_mode
   end
 
   def build_not_found_page(opts = {})
     if SiteSetting.bootstrap_error_pages?
       preload_json
-      opts[:layout] = 'application' if opts[:layout] == 'no_ember'
+      opts[:layout] = "application" if opts[:layout] == "no_ember"
     end
 
-    @current_user = current_user rescue nil
+    @current_user = begin
+                      current_user
+                    rescue
+                      nil
+                    end
 
     if !SiteSetting.login_required? || @current_user
       key = "page_not_found_topics"
@@ -785,7 +789,7 @@ class ApplicationController < ActionController::Base
         category_topic_ids = Category.pluck(:topic_id).compact
         @top_viewed = TopicQuery.new(nil, except_topic_ids: category_topic_ids).list_top_for("monthly").topics.first(10)
         @recent = Topic.includes(:category).where.not(id: category_topic_ids).recent(10)
-        @topics_partial = render_to_string partial: '/exceptions/not_found_topics', formats: [:html]
+        @topics_partial = render_to_string partial: "/exceptions/not_found_topics", formats: [:html]
         Discourse.redis.setex(key, 10.minutes, @topics_partial)
       end
     end
@@ -795,15 +799,15 @@ class ApplicationController < ActionController::Base
     @group = opts[:group]
     @hide_search = true if SiteSetting.login_required
 
-    params[:slug] = params[:slug].first if params[:slug].kind_of?(Array)
-    params[:id] = params[:id].first if params[:id].kind_of?(Array)
-    @slug = (params[:slug].presence || params[:id].presence || "").tr('-', ' ')
+    params[:slug] = params[:slug].first if params[:slug].is_a?(Array)
+    params[:id] = params[:id].first if params[:id].is_a?(Array)
+    @slug = (params[:slug].presence || params[:id].presence || "").tr("-", " ")
 
-    render_to_string status: opts[:status], layout: opts[:layout], formats: [:html], template: '/exceptions/not_found'
+    render_to_string status: opts[:status], layout: opts[:layout], formats: [:html], template: "/exceptions/not_found"
   end
 
   def is_asset_path
-    request.env['DISCOURSE_IS_ASSET_PATH'] = 1
+    request.env["DISCOURSE_IS_ASSET_PATH"] = 1
   end
 
   def is_feed_request?
@@ -812,10 +816,10 @@ class ApplicationController < ActionController::Base
 
   def add_noindex_header
     if request.get?
-      if SiteSetting.allow_index_in_robots_txt
-        response.headers['X-Robots-Tag'] = 'noindex'
+      response.headers["X-Robots-Tag"] = if SiteSetting.allow_index_in_robots_txt
+        "noindex"
       else
-        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        "noindex, nofollow"
       end
     end
   end
@@ -835,10 +839,7 @@ class ApplicationController < ActionController::Base
 
   # returns an array of integers given a param key
   # returns nil if key is not found
-  def param_to_integer_list(key, delimiter = ',')
-    if params[key]
-      params[key].split(delimiter).map(&:to_i)
-    end
+  def param_to_integer_list(key, delimiter = ",")
+    params[key]&.split(delimiter)&.map(&:to_i)
   end
-
 end

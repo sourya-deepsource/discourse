@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class MigrateFeaturedLinks < ::Jobs::Onceoff
-
     def execute_onceoff(args)
       TopicCustomField.where(name: "featured_link").find_each do |tcf|
         if tcf.value.present?
@@ -26,5 +24,4 @@ module Jobs
       end
     end
   end
-
 end
