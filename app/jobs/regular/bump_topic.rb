@@ -2,7 +2,6 @@
 
 module Jobs
   class BumpTopic < ::Jobs::Base
-
     def execute(args)
       topic_timer = TopicTimer.find_by(id: args[:topic_timer_id] || args[:topic_status_update_id])
 
@@ -17,6 +16,5 @@ module Jobs
       end
       topic_timer.trash!(Discourse.system_user)
     end
-
   end
 end

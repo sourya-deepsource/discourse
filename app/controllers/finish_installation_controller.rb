@@ -2,9 +2,9 @@
 
 class FinishInstallationController < ApplicationController
   skip_before_action :check_xhr, :preload_json, :redirect_to_login_if_required
-  layout 'finish_installation'
+  layout "finish_installation"
 
-  before_action :ensure_no_admins, except: ['confirm_email', 'resend_email']
+  before_action :ensure_no_admins, except: ["confirm_email", "resend_email"]
 
   def index
   end
@@ -54,9 +54,9 @@ class FinishInstallationController < ApplicationController
 
     if email_token.present?
       Jobs.enqueue(:critical_user_email,
-                   type: :signup,
-                   user_id: @user.id,
-                   email_token: email_token.token)
+        type: :signup,
+        user_id: @user.id,
+        email_token: email_token.token)
     end
   end
 

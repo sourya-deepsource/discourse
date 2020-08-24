@@ -5,7 +5,7 @@ class CategoryUser < ActiveRecord::Base
   belongs_to :user
 
   def self.lookup(user, level)
-    self.where(user: user, notification_level: notification_levels[level])
+    where(user: user, notification_level: notification_levels[level])
   end
 
   def self.notification_levels
@@ -42,7 +42,7 @@ class CategoryUser < ActiveRecord::Base
     if category_ids.present?
       params = {
         user_id: user.id,
-        level_num: level_num,
+        level_num: level_num
       }
 
       sql = <<~SQL
@@ -91,7 +91,6 @@ class CategoryUser < ActiveRecord::Base
   end
 
   def self.auto_track(opts = {})
-
     builder = DB.build <<~SQL
       UPDATE topic_users tu
       SET notification_level = :tracking,
@@ -126,7 +125,6 @@ class CategoryUser < ActiveRecord::Base
   end
 
   def self.auto_watch(opts = {})
-
     builder = DB.build <<~SQL
       UPDATE topic_users tu
       SET notification_level =
@@ -183,7 +181,6 @@ class CategoryUser < ActiveRecord::Base
       regular: notification_levels[:regular],
       auto_watch_category: TopicUser.notification_reasons[:auto_watch_category]
     )
-
   end
 
   def self.ensure_consistency!

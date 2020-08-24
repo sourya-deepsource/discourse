@@ -1,22 +1,21 @@
 # frozen_string_literal: true
 
 module Jobs
-
   # Asynchronously send an email to a user
   class UserEmail < ::Jobs::Base
     include Skippable
 
-    sidekiq_options queue: 'low'
+    sidekiq_options queue: "low"
 
     # Can be overridden by subclass, for example critical email
     # should always consider being sent
     def quit_email_early?
-      SiteSetting.disable_emails == 'yes'
+      SiteSetting.disable_emails == "yes"
     end
 
     def execute(args)
       raise Discourse::InvalidParameters.new(:user_id) unless args[:user_id].present?
-      raise Discourse::InvalidParameters.new(:type)    unless args[:type].present?
+      raise Discourse::InvalidParameters.new(:type) unless args[:type].present?
 
       # This is for performance. Quit out fast without doing a bunch
       # of extra work when emails are disabled.
@@ -30,7 +29,7 @@ module Jobs
 
       set_skip_context(type, args[:user_id], to_address, args[:post_id])
 
-      return skip(SkippedEmailLog.reason_types[:user_email_no_user]) if !user
+      return skip(SkippedEmailLog.reason_types[:user_email_no_user]) unless user
       return skip(SkippedEmailLog.reason_types[:user_email_no_email]) if to_address == "no_email_found"
 
       if args[:post_id].present?
@@ -40,7 +39,7 @@ module Jobs
           return skip(SkippedEmailLog.reason_types[:user_email_post_not_found])
         end
 
-        if !Guardian.new(user).can_see?(post)
+        unless Guardian.new(user).can_see?(post)
           return skip(SkippedEmailLog.reason_types[:user_email_access_denied])
         end
       end
@@ -72,16 +71,16 @@ module Jobs
     end
 
     def set_skip_context(type, user_id, to_address, post_id)
-      @skip_context = { type: type, user_id: user_id, to_address: to_address, post_id: post_id }
+      @skip_context = {type: type, user_id: user_id, to_address: to_address, post_id: post_id}
     end
 
-    NOTIFICATIONS_SENT_BY_MAILING_LIST ||= Set.new %w{
+    NOTIFICATIONS_SENT_BY_MAILING_LIST ||= Set.new %w[
       posted
       replied
       mentioned
       group_mentioned
       quoted
-    }
+    ]
 
     def message_for_email(user, post, type, notification, args = nil)
       args ||= {}
@@ -114,7 +113,7 @@ module Jobs
       email_args = {}
 
       if (post || notification || notification_type) &&
-         (seen_recently && !user.suspended?)
+          (seen_recently && !user.suspended?)
 
         return skip_message(SkippedEmailLog.reason_types[:user_email_seen_recently])
       end
@@ -122,7 +121,7 @@ module Jobs
       email_args[:post] = post if post
 
       if notification || notification_type
-        email_args[:notification_type]      ||= notification_type      || notification.try(:notification_type)
+        email_args[:notification_type] ||= notification_type || notification.try(:notification_type)
         email_args[:notification_data_hash] ||= notification_data_hash || notification.try(:data_hash)
 
         unless String === email_args[:notification_type]
@@ -133,15 +132,15 @@ module Jobs
         end
 
         if user.user_option.mailing_list_mode? &&
-           user.user_option.mailing_list_mode_frequency > 0 && # don't catch notifications for users on daily mailing list mode
-           (!post.try(:topic).try(:private_message?)) &&
-           NOTIFICATIONS_SENT_BY_MAILING_LIST.include?(email_args[:notification_type])
+            user.user_option.mailing_list_mode_frequency > 0 && # don't catch notifications for users on daily mailing list mode
+            !post.try(:topic).try(:private_message?) &&
+            NOTIFICATIONS_SENT_BY_MAILING_LIST.include?(email_args[:notification_type])
           # no need to log a reason when the mail was already sent via the mailing list job
           return [nil, nil]
         end
 
         unless always_email_regular?(user, type) || always_email_private_message?(user, type)
-          if (notification && notification.read?) || (post && post.seen?(user))
+          if notification&.read? || post&.seen?(user)
             return skip_message(SkippedEmailLog.reason_types[:user_email_notification_already_read])
           end
         end
@@ -173,9 +172,9 @@ module Jobs
         email_args[:user_history] = UserHistory.where(id: args[:user_history_id]).first
       end
 
-      message = EmailLog.unique_email_per_post(post, user) do
+      message = EmailLog.unique_email_per_post(post, user) {
         UserNotifications.public_send(type, user, email_args)
-      end
+      }
 
       # Update the to address if we have a custom one
       message.to = to_address if message && to_address.present?
@@ -251,5 +250,4 @@ module Jobs
       type != :user_private_message && user.user_option.email_level == UserOption.email_level_types[:always]
     end
   end
-
 end

@@ -7,9 +7,9 @@ module Jobs
       state = !!args[:state]
 
       if topic_timer.blank? ||
-         topic_timer.execute_at > Time.zone.now ||
-         (topic = topic_timer.topic).blank? ||
-         topic.closed == state
+          topic_timer.execute_at > Time.zone.now ||
+          (topic = topic_timer.topic).blank? ||
+          topic.closed == state
 
         return
       end
@@ -24,7 +24,7 @@ module Jobs
             by_user: Discourse.system_user
           )
         else
-          topic.update_status('autoclosed', state, user)
+          topic.update_status("autoclosed", state, user)
         end
 
         topic.inherit_auto_close_from_category if state == false

@@ -14,30 +14,30 @@ class Admin::ApiController < Admin::AdminController
       COALESCE(revoked_at, created_at) DESC
     SQL
 
-    render_serialized(keys.to_a, ApiKeySerializer, root: 'keys')
+    render_serialized(keys.to_a, ApiKeySerializer, root: "keys")
   end
 
   def show
     api_key = ApiKey.includes(:api_key_scopes).find_by!(id: params[:id])
-    render_serialized(api_key, ApiKeySerializer, root: 'key')
+    render_serialized(api_key, ApiKeySerializer, root: "key")
   end
 
   def scopes
-    scopes = ApiKeyScope.scope_mappings.reduce({}) do |memo, (resource, actions)|
+    scopes = ApiKeyScope.scope_mappings.reduce({}) { |memo, (resource, actions)|
       memo.tap do |m|
-        m[resource] = actions.map do |k, v|
+        m[resource] = actions.map { |k, v|
           {
             id: "#{resource}:#{k}",
             key: k,
-            name: k.to_s.gsub('_', ' '),
+            name: k.to_s.tr("_", " "),
             params: v[:params],
             urls: v[:urls]
           }
-        end
+        }
       end
-    end
+    }
 
-    render json: { scopes: scopes }
+    render json: {scopes: scopes}
   end
 
   def update
@@ -46,7 +46,7 @@ class Admin::ApiController < Admin::AdminController
       api_key.update!(update_params)
       log_api_key(api_key, UserHistory.actions[:api_key_update], changes: api_key.saved_changes)
     end
-    render_serialized(api_key, ApiKeySerializer, root: 'key')
+    render_serialized(api_key, ApiKeySerializer, root: "key")
   end
 
   def destroy
@@ -70,7 +70,7 @@ class Admin::ApiController < Admin::AdminController
       api_key.save!
       log_api_key(api_key, UserHistory.actions[:api_key_create], changes: api_key.saved_changes)
     end
-    render_serialized(api_key, ApiKeySerializer, root: 'key')
+    render_serialized(api_key, ApiKeySerializer, root: "key")
   end
 
   def undo_revoke_key
@@ -99,7 +99,7 @@ class Admin::ApiController < Admin::AdminController
 
   def build_scopes
     params.require(:key)[:scopes].to_a.map do |scope_params|
-      resource, action = scope_params[:id].split(':')
+      resource, action = scope_params[:id].split(":")
 
       mapping = ApiKeyScope.scope_mappings.dig(resource.to_sym, action.to_sym)
       raise Discourse::InvalidParameters if mapping.nil? # invalid mapping
@@ -117,7 +117,7 @@ class Admin::ApiController < Admin::AdminController
 
     scope_params.slice(*params).tap do |allowed_params|
       allowed_params.each do |k, v|
-        v.blank? ? allowed_params.delete(k) : allowed_params[k] = v.split(',')
+        v.blank? ? allowed_params.delete(k) : allowed_params[k] = v.split(",")
       end
     end
   end
@@ -140,5 +140,4 @@ class Admin::ApiController < Admin::AdminController
   def log_api_key_restore(*args)
     StaffActionLogger.new(current_user).log_api_key_restore(*args)
   end
-
 end

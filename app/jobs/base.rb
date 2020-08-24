@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   def self.queued
     Sidekiq::Stats.new.enqueued
   end
@@ -24,7 +23,7 @@ module Jobs
 
   def self.last_job_performed_at
     Sidekiq.redis do |r|
-      int = r.get('last_job_perform_at')
+      int = r.get("last_job_perform_at")
       int ? Time.at(int.to_i) : nil
     end
   end
@@ -82,9 +81,9 @@ module Jobs
 
           if exception.present?
             @data["exception"] = exception # Exception - if job fails a json encoded exception
-            @data["status"] = 'failed'
+            @data["status"] = "failed"
           else
-            @data["status"] = 'success' # Status - fail, success, pending
+            @data["status"] = "success" # Status - fail, success, pending
           end
 
           write_to_log
@@ -98,13 +97,13 @@ module Jobs
           Logger.new f
         end
         @@log_queue ||= Queue.new
-        @@log_thread ||= Thread.new do
-          begin
+        @@log_thread ||= Thread.new {
+          
             loop { @@logger << @@log_queue.pop }
           rescue Exception => e
             Discourse.warn_exception(e, message: "Sidekiq logging thread terminated unexpectedly")
-          end
-        end
+          
+        }
         @@log_queue.push(message)
       end
 
@@ -129,10 +128,10 @@ module Jobs
 
       def self.ensure_interval_logging!
         interval = ENV["DISCOURSE_LOG_SIDEKIQ_INTERVAL"]
-        return if !interval
+        return unless interval
         interval = interval.to_i
-        @@interval_thread ||= Thread.new do
-          begin
+        @@interval_thread ||= Thread.new {
+          
             loop do
               sleep interval
               mutex.synchronize do
@@ -141,8 +140,8 @@ module Jobs
             end
           rescue Exception => e
             Discourse.warn_exception(e, message: "Sidekiq interval logging thread terminated unexpectedly")
-          end
-        end
+          
+        }
       end
     end
 
@@ -168,12 +167,12 @@ module Jobs
       ctx[:opts] = opts
       ctx[:job] = self.class
       ctx[:message] = code_desc if code_desc
-      ctx.merge!(extra) if extra != nil
+      ctx.merge!(extra) if !extra.nil?
       ctx
     end
 
     def self.delayed_perform(opts = {})
-      self.new.perform(opts)
+      new.perform(opts)
     end
 
     def execute(opts = {})
@@ -189,7 +188,7 @@ module Jobs
 
       if ::Jobs.run_later?
         Sidekiq.redis do |r|
-          r.set('last_job_perform_at', Time.now.to_i)
+          r.set("last_job_perform_at", Time.now.to_i)
         end
       end
 
@@ -215,7 +214,7 @@ module Jobs
 
       exceptions = []
       dbs.each do |db|
-        begin
+        
           exception = {}
 
           RailsMultisite::ConnectionManagement.with_connection(db) do
@@ -232,19 +231,19 @@ module Jobs
                 execute(opts)
               rescue => e
                 exception[:ex] = e
-                exception[:other] = { problem_db: db }
+                exception[:other] = {problem_db: db}
               end
             rescue => e
               exception[:ex] = e
               exception[:message] = "While establishing database connection to #{db}"
-              exception[:other] = { problem_db: db }
+              exception[:other] = {problem_db: db}
             ensure
               job_instrumenter.stop(exception: exception)
             end
           end
 
           exceptions << exception unless exception.empty?
-        end
+        
       end
 
       Thread.current[Logster::Logger::LOGSTER_ENV] = nil
@@ -260,7 +259,6 @@ module Jobs
     ensure
       ActiveRecord::Base.connection_handler.clear_active_connections!
     end
-
   end
 
   class HandledExceptionWrapper < StandardError
@@ -282,10 +280,10 @@ module Jobs
   end
 
   def self.enqueue(job, opts = {})
-    if job.instance_of?(Class)
-      klass = job
+    klass = if job.instance_of?(Class)
+      job
     else
-      klass = "::Jobs::#{job.to_s.camelcase}".constantize
+      "::Jobs::#{job.to_s.camelcase}".constantize
     end
 
     # Unless we want to work on all sites
@@ -297,18 +295,18 @@ module Jobs
 
     if ::Jobs.run_later?
       hash = {
-        'class' => klass,
-        'args' => [opts]
+        "class" => klass,
+        "args" => [opts]
       }
 
       if delay = opts.delete(:delay_for)
         if delay.to_f > 0
-          hash['at'] = Time.now.to_f + delay.to_f
+          hash["at"] = Time.now.to_f + delay.to_f
         end
       end
 
       if queue = opts.delete(:queue)
-        hash['queue'] = queue
+        hash["queue"] = queue
       end
 
       klass.client_push(hash)
@@ -349,7 +347,6 @@ module Jobs
         end
       end
     end
-
   end
 
   def self.enqueue_in(secs, job_name, opts = {})

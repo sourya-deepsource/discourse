@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class Tl3Promotions < ::Jobs::Scheduled
     daily at: 4.hours
 
@@ -29,9 +28,9 @@ module Jobs
 
       # Promotions
       User.real.not_suspended.where(
-          trust_level: TrustLevel[2],
-          manual_locked_trust_level: nil
-        ).where.not(id: demoted_user_ids)
+        trust_level: TrustLevel[2],
+        manual_locked_trust_level: nil
+      ).where.not(id: demoted_user_ids)
         .joins(:user_stat)
         .where("user_stats.days_visited >= ?", SiteSetting.tl3_requires_days_visited)
         .where("user_stats.topics_entered >= ?", SiteSetting.tl3_requires_topics_viewed_all_time)
@@ -41,8 +40,6 @@ module Jobs
         .find_each do |u|
         Promotion.new(u).review_tl2
       end
-
     end
   end
-
 end

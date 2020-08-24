@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class GrantEmoji < ::Jobs::Onceoff
     def execute_onceoff(args)
       return unless SiteSetting.enable_badges
@@ -14,9 +13,9 @@ module Jobs
         .where("cooked LIKE '%emoji%'")
         .find_in_batches do |group|
         group.each do |p|
-          doc = Nokogiri::HTML5::fragment(p.cooked)
+          doc = Nokogiri::HTML5.fragment(p.cooked)
           if (doc.css("img.emoji") - doc.css(".quote img")).size > 0
-            to_award[p.user_id] ||= { post_id: p.id, created_at: p.created_at }
+            to_award[p.user_id] ||= {post_id: p.id, created_at: p.created_at}
           end
         end
       end
@@ -30,7 +29,5 @@ module Jobs
     def badge
       Badge.find(Badge::FirstEmoji)
     end
-
   end
-
 end

@@ -7,7 +7,7 @@ class RobotsTxtController < ApplicationController
   OVERRIDDEN_HEADER = "# This robots.txt file has been customized at /admin/customize/robots\n"
 
   # NOTE: order is important!
-  DISALLOWED_PATHS ||= %w{
+  DISALLOWED_PATHS ||= %w[
     /auth/
     /assets/browser-update*.js
     /email/
@@ -19,7 +19,7 @@ class RobotsTxtController < ApplicationController
     /user-api-key/
     /*?api_key*
     /*?*api_key*
-  }
+  ]
 
   def index
     if (overridden = SiteSetting.overridden_robots_txt.dup).present?
@@ -29,9 +29,9 @@ class RobotsTxtController < ApplicationController
     end
     if SiteSetting.allow_index_in_robots_txt?
       @robots_info = self.class.fetch_default_robots_info
-      render :index, content_type: 'text/plain'
+      render :index, content_type: "text/plain"
     else
-      render :no_index, content_type: 'text/plain'
+      render :no_index, content_type: "text/plain"
     end
   end
 
@@ -48,7 +48,7 @@ class RobotsTxtController < ApplicationController
 
   def self.fetch_default_robots_info
     deny_paths = DISALLOWED_PATHS.map { |p| Discourse.base_uri + p }
-    deny_all = [ "#{Discourse.base_uri}/" ]
+    deny_all = ["#{Discourse.base_uri}/"]
 
     result = {
       header: "# See http://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file",
@@ -56,22 +56,22 @@ class RobotsTxtController < ApplicationController
     }
 
     if SiteSetting.allowed_crawler_user_agents.present?
-      SiteSetting.allowed_crawler_user_agents.split('|').each do |agent|
-        result[:agents] << { name: agent, disallow: deny_paths }
+      SiteSetting.allowed_crawler_user_agents.split("|").each do |agent|
+        result[:agents] << {name: agent, disallow: deny_paths}
       end
 
-      result[:agents] << { name: '*', disallow: deny_all }
+      result[:agents] << {name: "*", disallow: deny_all}
     elsif SiteSetting.blocked_crawler_user_agents.present?
-      result[:agents] << { name: '*', disallow: deny_paths }
-      SiteSetting.blocked_crawler_user_agents.split('|').each do |agent|
-        result[:agents] << { name: agent, disallow: deny_all }
+      result[:agents] << {name: "*", disallow: deny_paths}
+      SiteSetting.blocked_crawler_user_agents.split("|").each do |agent|
+        result[:agents] << {name: agent, disallow: deny_all}
       end
     else
-      result[:agents] << { name: '*', disallow: deny_paths }
+      result[:agents] << {name: "*", disallow: deny_paths}
     end
 
     if SiteSetting.slow_down_crawler_user_agents.present?
-      SiteSetting.slow_down_crawler_user_agents.split('|').each do |agent|
+      SiteSetting.slow_down_crawler_user_agents.split("|").each do |agent|
         result[:agents] << {
           name: agent,
           delay: SiteSetting.slow_down_crawler_rate,

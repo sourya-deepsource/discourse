@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_dependency 'email/sender'
+require_dependency "email/sender"
 
 module Jobs
   class GroupSmtpEmail < ::Jobs::Base
-    sidekiq_options queue: 'critical'
+    sidekiq_options queue: "critical"
 
     def execute(args)
       group = Group.find_by(id: args[:group_id])

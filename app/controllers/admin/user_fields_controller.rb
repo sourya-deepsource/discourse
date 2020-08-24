@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::UserFieldsController < Admin::AdminController
-
   def self.columns
     [:name, :field_type, :editable, :description, :required, :show_on_profile, :show_on_user_card, :position]
   end
@@ -20,7 +19,7 @@ class Admin::UserFieldsController < Admin::AdminController
 
   def index
     user_fields = UserField.all.includes(:user_field_options).order(:position)
-    render_serialized(user_fields, UserFieldSerializer, root: 'user_fields')
+    render_serialized(user_fields, UserFieldSerializer, root: "user_fields")
   end
 
   def update
@@ -35,7 +34,7 @@ class Admin::UserFieldsController < Admin::AdminController
     update_options(field)
 
     if field.save
-      render_serialized(field, UserFieldSerializer, root: 'user_field')
+      render_serialized(field, UserFieldSerializer, root: "user_field")
     else
       render_json_error(field)
     end
@@ -53,7 +52,7 @@ class Admin::UserFieldsController < Admin::AdminController
     options = params[:user_field][:options]
     if options.present?
       UserFieldOption.where(user_field_id: field.id).delete_all
-      field.user_field_options_attributes = options.map { |o| { value: o } }.uniq
+      field.user_field_options_attributes = options.map { |o| {value: o} }.uniq
     end
   end
 end

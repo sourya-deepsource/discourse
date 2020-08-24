@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class ProcessSnsNotification < ::Jobs::Base
     sidekiq_options retry: false
 
@@ -12,8 +11,8 @@ module Jobs
 
       message = begin
         JSON.parse(message)
-      rescue JSON::ParserError
-        nil
+                rescue JSON::ParserError
+                  nil
       end
 
       return unless message && message["notificationType"] == "Bounce"
@@ -37,7 +36,5 @@ module Jobs
         end
       end
     end
-
   end
-
 end

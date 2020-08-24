@@ -8,7 +8,6 @@ module Jobs
       User.joins("LEFT JOIN groups ON lower(groups.name) = users.username_lower")
         .where("groups.id IS NOT NULL")
         .find_each do |user|
-
         suffix = 1
         old_username = user.username
 

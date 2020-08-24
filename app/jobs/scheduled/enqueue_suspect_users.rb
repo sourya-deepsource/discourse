@@ -18,10 +18,10 @@ module Jobs
         .where("LENGTH(COALESCE(user_profiles.bio_raw, user_profiles.website, '')) > 0")
         .where("user_stats.posts_read_count <= 1 AND user_stats.topics_entered <= 1")
         .joins("LEFT OUTER JOIN reviewables r ON r.target_id = users.id AND r.target_type = 'User'")
-        .where('r.id IS NULL')
-        .joins('LEFT OUTER JOIN user_custom_fields ucf ON users.id = ucf.user_id')
-        .group('users.id, ucf.id')
-        .having('ucf.id IS NULL OR NOT bool_or(ucf.name = ?)', 'import_id')
+        .where("r.id IS NULL")
+        .joins("LEFT OUTER JOIN user_custom_fields ucf ON users.id = ucf.user_id")
+        .group("users.id, ucf.id")
+        .having("ucf.id IS NULL OR NOT bool_or(ucf.name = ?)", "import_id")
         .limit(10)
 
       users.each do |user|
@@ -36,7 +36,7 @@ module Jobs
             name: user.name,
             email: user.email,
             bio: user_profile.bio_raw,
-            website: user_profile.website,
+            website: user_profile.website
           }
         )
 

@@ -3,7 +3,7 @@
 class InviteMailer < ActionMailer::Base
   include Email::BuildEmailHelper
 
-  layout 'email_template'
+  layout "email_template"
 
   def send_invite(invite)
     # Find the first topic they were invited to
@@ -33,24 +33,24 @@ class InviteMailer < ActionMailer::Base
       end
 
       build_email(invite.email,
-                  template: sanitized_message ? 'custom_invite_mailer' : 'invite_mailer',
-                  inviter_name: inviter_name,
-                  site_domain_name: Discourse.current_hostname,
-                  invite_link: "#{Discourse.base_url}/invites/#{invite.invite_key}",
-                  topic_title: topic_title,
-                  topic_excerpt: topic_excerpt,
-                  site_description: SiteSetting.site_description,
-                  site_title: SiteSetting.title,
-                  user_custom_message: sanitized_message)
+        template: sanitized_message ? "custom_invite_mailer" : "invite_mailer",
+        inviter_name: inviter_name,
+        site_domain_name: Discourse.current_hostname,
+        invite_link: "#{Discourse.base_url}/invites/#{invite.invite_key}",
+        topic_title: topic_title,
+        topic_excerpt: topic_excerpt,
+        site_description: SiteSetting.site_description,
+        site_title: SiteSetting.title,
+        user_custom_message: sanitized_message)
     else
       build_email(invite.email,
-                  template: sanitized_message ? 'custom_invite_forum_mailer' : 'invite_forum_mailer',
-                  inviter_name: inviter_name,
-                  site_domain_name: Discourse.current_hostname,
-                  invite_link: "#{Discourse.base_url}/invites/#{invite.invite_key}",
-                  site_description: SiteSetting.site_description,
-                  site_title: SiteSetting.title,
-                  user_custom_message: sanitized_message)
+        template: sanitized_message ? "custom_invite_forum_mailer" : "invite_forum_mailer",
+        inviter_name: inviter_name,
+        site_domain_name: Discourse.current_hostname,
+        invite_link: "#{Discourse.base_url}/invites/#{invite.invite_key}",
+        site_description: SiteSetting.site_description,
+        site_title: SiteSetting.title,
+        user_custom_message: sanitized_message)
     end
   end
 
@@ -58,9 +58,8 @@ class InviteMailer < ActionMailer::Base
     if user.present?
       email_token = user.email_tokens.create(email: user.email)
       build_email(user.email,
-                  template: 'invite_password_instructions',
-                  email_token: email_token.token)
+        template: "invite_password_instructions",
+        email_token: email_token.token)
     end
   end
-
 end

@@ -35,7 +35,7 @@ class Admin::BackupsController < Admin::AdminController
     opts = {
       publish_to_message_bus: true,
       with_uploads: params.fetch(:with_uploads) == "true",
-      client_id: params[:client_id],
+      client_id: params[:client_id]
     }
     BackupRestore.backup!(current_user.id, opts)
   rescue BackupRestore::OperationRunningError
@@ -60,7 +60,7 @@ class Admin::BackupsController < Admin::AdminController
       Jobs.enqueue(
         :download_backup_email,
         user_id: current_user.id,
-        backup_file_path: url_for(controller: 'backups', action: 'show')
+        backup_file_path: url_for(controller: "backups", action: "show")
       )
 
       render body: nil
@@ -70,9 +70,9 @@ class Admin::BackupsController < Admin::AdminController
   end
 
   def show
-    if !EmailBackupToken.compare(current_user.id, params.fetch(:token))
-      @error = I18n.t('download_backup_mailer.no_token')
-      return render template: 'admin/backups/show.html.erb', layout: 'no_ember', status: 422
+    unless EmailBackupToken.compare(current_user.id, params.fetch(:token))
+      @error = I18n.t("download_backup_mailer.no_token")
+      return render template: "admin/backups/show.html.erb", layout: "no_ember", status: 422
     end
 
     store = BackupRestore::BackupStore.create
@@ -84,7 +84,7 @@ class Admin::BackupsController < Admin::AdminController
       if store.remote?
         redirect_to backup.source
       else
-        headers['Content-Length'] = File.size(backup.source).to_s
+        headers["Content-Length"] = File.size(backup.source).to_s
         send_file backup.source
       end
     else
@@ -114,7 +114,7 @@ class Admin::BackupsController < Admin::AdminController
     opts = {
       filename: params.fetch(:id),
       client_id: params.fetch(:client_id),
-      publish_to_message_bus: true,
+      publish_to_message_bus: true
     }
     BackupRestore.restore!(current_user.id, opts)
   rescue BackupRestore::OperationRunningError
@@ -227,7 +227,7 @@ class Admin::BackupsController < Admin::AdminController
   end
 
   def valid_filename?(filename)
-    !!(/^[a-zA-Z0-9\._\-]+$/ =~ filename)
+    !!(/^[a-zA-Z0-9._\-]+$/ =~ filename)
   end
 
   def render_error(message_key)

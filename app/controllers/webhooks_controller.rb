@@ -3,7 +3,6 @@
 require "openssl"
 
 class WebhooksController < ActionController::Base
-
   def mailgun
     return mailgun_failure if SiteSetting.mailgun_api_key.blank?
 
@@ -86,8 +85,8 @@ class WebhooksController < ActionController::Base
       message_event = event.dig("msys", "message_event")
       next unless message_event
 
-      message_id   = message_event.dig("rcpt_meta", "message_id")
-      to_address   = message_event["rcpt_to"]
+      message_id = message_event.dig("rcpt_meta", "message_id")
+      to_address = message_event["rcpt_to"]
       bounce_class = message_event["bounce_class"]
       next unless bounce_class
 
@@ -107,7 +106,7 @@ class WebhooksController < ActionController::Base
   end
 
   def aws
-    raw  = request.raw_post
+    raw = request.raw_post
     json = JSON.parse(raw)
 
     case json["Type"]
@@ -196,5 +195,4 @@ class WebhooksController < ActionController::Base
 
     Email::Receiver.update_bounce_score(email_log.user.email, bounce_score)
   end
-
 end

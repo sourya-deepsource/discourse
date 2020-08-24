@@ -10,7 +10,7 @@ class ReviewableClaimedTopicsController < ApplicationController
     begin
       ReviewableClaimedTopic.create!(user_id: current_user.id, topic_id: topic.id)
     rescue ActiveRecord::RecordInvalid
-      return render_json_error(I18n.t('reviewables.conflict'), status: 409)
+      return render_json_error(I18n.t("reviewables.conflict"), status: 409)
     end
 
     topic.reviewables.find_each do |reviewable|
@@ -45,10 +45,10 @@ class ReviewableClaimedTopicsController < ApplicationController
       user_ids.uniq!
     end
 
-    if claimed_by.present?
-      data = { topic_id: topic.id, user: BasicUserSerializer.new(claimed_by, root: false).as_json }
+    data = if claimed_by.present?
+      {topic_id: topic.id, user: BasicUserSerializer.new(claimed_by, root: false).as_json}
     else
-      data = { topic_id: topic.id }
+      {topic_id: topic.id}
     end
 
     MessageBus.publish("/reviewable_claimed", data, user_ids: user_ids)

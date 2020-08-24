@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Admin::WebHooksController < Admin::AdminController
-  before_action :fetch_web_hook, only: %i(show update destroy list_events bulk_events ping)
+  before_action :fetch_web_hook, only: %i[show update destroy list_events bulk_events ping]
 
   def index
     limit = 50
@@ -18,8 +18,8 @@ class Admin::WebHooksController < Admin::AdminController
       extras: {
         event_types: WebHookEventType.active,
         default_event_types: WebHook.default_event_types,
-        content_types: WebHook.content_types.map { |name, id| { id: id, name: name } },
-        delivery_statuses: WebHook.last_delivery_statuses.map { |name, id| { id: id, name: name.to_s } },
+        content_types: WebHook.content_types.map { |name, id| {id: id, name: name} },
+        delivery_statuses: WebHook.last_delivery_statuses.map { |name, id| {id: id, name: name.to_s} }
       },
       total_rows_web_hooks: WebHook.count,
       load_more_web_hooks: admin_web_hooks_path(limit: limit, offset: offset + limit, format: :json)
@@ -29,7 +29,7 @@ class Admin::WebHooksController < Admin::AdminController
   end
 
   def show
-    render_serialized(@web_hook, AdminWebHookSerializer, root: 'web_hook')
+    render_serialized(@web_hook, AdminWebHookSerializer, root: "web_hook")
   end
 
   def create
@@ -37,7 +37,7 @@ class Admin::WebHooksController < Admin::AdminController
 
     if web_hook.save
       StaffActionLogger.new(current_user).log_web_hook(web_hook, UserHistory.actions[:web_hook_create])
-      render_serialized(web_hook, AdminWebHookSerializer, root: 'web_hook')
+      render_serialized(web_hook, AdminWebHookSerializer, root: "web_hook")
     else
       render_json_error web_hook.errors.full_messages
     end
@@ -46,7 +46,7 @@ class Admin::WebHooksController < Admin::AdminController
   def update
     if @web_hook.update(web_hook_params)
       StaffActionLogger.new(current_user).log_web_hook(@web_hook, UserHistory.actions[:web_hook_update], changes: @web_hook.saved_changes)
-      render_serialized(@web_hook, AdminWebHookSerializer, root: 'web_hook')
+      render_serialized(@web_hook, AdminWebHookSerializer, root: "web_hook")
     else
       render_json_error @web_hook.errors.full_messages
     end
@@ -89,8 +89,8 @@ class Admin::WebHooksController < Admin::AdminController
     if web_hook_event
       web_hook = web_hook_event.web_hook
       conn = Excon.new(URI(web_hook.payload_url).to_s,
-                       ssl_verify_peer: web_hook.verify_certificate,
-                       retry_limit: 0)
+        ssl_verify_peer: web_hook.verify_certificate,
+        retry_limit: 0)
 
       now = Time.zone.now
       response = conn.post(headers: MultiJson.load(web_hook_event.headers), body: web_hook_event.payload)
@@ -100,14 +100,14 @@ class Admin::WebHooksController < Admin::AdminController
         response_body: response.body,
         duration: ((Time.zone.now - now) * 1000).to_i
       )
-      render_serialized(web_hook_event, AdminWebHookEventSerializer, root: 'web_hook_event')
+      render_serialized(web_hook_event, AdminWebHookEventSerializer, root: "web_hook_event")
     else
       render json: failed_json
     end
   end
 
   def ping
-    Jobs.enqueue(:emit_web_hook_event, web_hook_id: @web_hook.id, event_type: 'ping', event_name: 'ping')
+    Jobs.enqueue(:emit_web_hook_event, web_hook_id: @web_hook.id, event_type: "ping", event_name: "ping")
     render json: success_json
   end
 
@@ -115,11 +115,11 @@ class Admin::WebHooksController < Admin::AdminController
 
   def web_hook_params
     params.require(:web_hook).permit(:payload_url, :content_type, :secret,
-                                     :wildcard_web_hook, :active, :verify_certificate,
-                                     web_hook_event_type_ids: [],
-                                     group_ids: [],
-                                     tag_names: [],
-                                     category_ids: [])
+      :wildcard_web_hook, :active, :verify_certificate,
+      web_hook_event_type_ids: [],
+      group_ids: [],
+      tag_names: [],
+      category_ids: [])
   end
 
   def fetch_web_hook

@@ -2,7 +2,6 @@
 
 module Jobs
   class PendingQueuedPostsReminder < ::Jobs::Scheduled
-
     every 1.hour
 
     def execute(args)
@@ -16,8 +15,8 @@ module Jobs
           target_group_names: Group[:moderators].name,
           archetype: Archetype.private_message,
           subtype: TopicSubtype.system_message,
-          title: I18n.t('system_messages.queued_posts_reminder.subject_template', count: queued_post_ids.size),
-          raw: I18n.t('system_messages.queued_posts_reminder.text_body_template', base_url: Discourse.base_url)
+          title: I18n.t("system_messages.queued_posts_reminder.subject_template", count: queued_post_ids.size),
+          raw: I18n.t("system_messages.queued_posts_reminder.text_body_template", base_url: Discourse.base_url)
         )
 
         self.last_notified_id = queued_post_ids.max
@@ -28,7 +27,7 @@ module Jobs
 
     def should_notify_ids
       ReviewableQueuedPost.where(status: Reviewable.statuses[:pending]).where(
-        'created_at < ?', SiteSetting.notify_about_queued_posts_after.hours.ago
+        "created_at < ?", SiteSetting.notify_about_queued_posts_after.hours.ago
       ).pluck(:id)
     end
 

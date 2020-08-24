@@ -23,14 +23,14 @@ class ApiKeyScope < ActiveRecord::Base
 
       @default_mappings ||= {
         topics: {
-          write: { actions: write_actions, params: %i[topic_id], urls: find_urls(write_actions) },
+          write: {actions: write_actions, params: %i[topic_id], urls: find_urls(write_actions)},
           read: {
             actions: read_actions, params: %i[topic_id],
-            aliases: { topic_id: :id }, urls: find_urls(read_actions)
+            aliases: {topic_id: :id}, urls: find_urls(read_actions)
           },
           read_lists: {
             actions: list_actions, params: %i[category_id],
-            aliases: { category_id: :category_slug_path_with_id }, urls: find_urls(list_actions)
+            aliases: {category_id: :category_slug_path_with_id}, urls: find_urls(list_actions)
           }
         }
       }
@@ -51,9 +51,9 @@ class ApiKeyScope < ActiveRecord::Base
     def find_urls(actions)
       Rails.application.routes.routes.reduce([]) do |memo, route|
         defaults = route.defaults
-        action = "#{defaults[:controller].to_s}##{defaults[:action]}"
-        path = route.path.spec.to_s.gsub(/\(\.:format\)/, '')
-        api_supported_path = path.end_with?('.rss') || route.path.requirements[:format]&.match?('json')
+        action = "#{defaults[:controller]}##{defaults[:action]}"
+        path = route.path.spec.to_s.gsub(/\(\.:format\)/, "")
+        api_supported_path = path.end_with?(".rss") || route.path.requirements[:format]&.match?("json")
         excluded_paths = %w[/new-topic /new-message /exception]
 
         memo.tap do |m|
@@ -64,7 +64,7 @@ class ApiKeyScope < ActiveRecord::Base
   end
 
   def permits?(route_param)
-    path_params = "#{route_param['controller']}##{route_param['action']}"
+    path_params = "#{route_param["controller"]}##{route_param["action"]}"
 
     mapping[:actions].include?(path_params) && (allowed_parameters.blank? || params_allowed?(route_param))
   end
@@ -80,7 +80,7 @@ class ApiKeyScope < ActiveRecord::Base
 
       return false if value.present? && alias_value.present?
 
-      value = value || alias_value
+      value ||= alias_value
       value = extract_category_id(value) if param_alias == :category_slug_path_with_id
 
       allowed_values.blank? || allowed_values.include?(value)
@@ -92,7 +92,7 @@ class ApiKeyScope < ActiveRecord::Base
   end
 
   def extract_category_id(category_slug_with_id)
-    parts = category_slug_with_id.split('/')
+    parts = category_slug_with_id.split("/")
 
     !parts.empty? && parts.last =~ /\A\d+\Z/ ? parts.pop : nil
   end

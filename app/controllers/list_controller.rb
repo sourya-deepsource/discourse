@@ -18,7 +18,7 @@ class ListController < ApplicationController
     TopTopic.periods.map { |p| :"category_top_#{p}" },
     TopTopic.periods.map { |p| :"category_none_top_#{p}" },
     # category feeds
-    :category_feed,
+    :category_feed
   ].flatten
 
   before_action :ensure_logged_in, except: [
@@ -87,11 +87,11 @@ class ListController < ApplicationController
 
         # Note the first is the default and we don't add a title
         if (filter.to_s != current_homepage) && use_crawler_layout?
-          filter_title = I18n.t("js.filters.#{filter.to_s}.title", count: 0)
-          if list_opts[:category] && @category
-            @title = I18n.t('js.filters.with_category', filter: filter_title, category: @category.name)
+          filter_title = I18n.t("js.filters.#{filter}.title", count: 0)
+          @title = if list_opts[:category] && @category
+            I18n.t("js.filters.with_category", filter: filter_title, category: @category.name)
           else
-            @title = I18n.t('js.filters.with_topics', filter: filter_title)
+            I18n.t("js.filters.with_topics", filter: filter_title)
           end
           @title << " - #{SiteSetting.title}"
         elsif @category.blank? && (filter.to_s == current_homepage) && SiteSetting.short_site_description.present?
@@ -104,25 +104,25 @@ class ListController < ApplicationController
 
     define_method("category_#{filter}") do
       canonical_url "#{Discourse.base_url_no_prefix}#{@category.url}"
-      self.public_send(filter, category: @category.id)
+      public_send(filter, category: @category.id)
     end
 
     define_method("category_none_#{filter}") do
-      self.public_send(filter, category: @category.id, no_subcategories: true)
+      public_send(filter, category: @category.id, no_subcategories: true)
     end
   end
 
   def category_default
     canonical_url "#{Discourse.base_url_no_prefix}#{@category.url}"
     view_method = @category.default_view
-    view_method = 'latest' unless %w(latest top).include?(view_method)
+    view_method = "latest" unless %w[latest top].include?(view_method)
 
-    self.public_send(view_method, category: @category.id)
+    public_send(view_method, category: @category.id)
   end
 
   def topics_by
     list_opts = build_topic_list_options
-    target_user = fetch_user_from_params({ include_inactive: current_user.try(:staff?) || (current_user && SiteSetting.show_inactive_accounts) }, [:user_stat, :user_option])
+    target_user = fetch_user_from_params({include_inactive: current_user.try(:staff?) || (current_user && SiteSetting.show_inactive_accounts)}, [:user_stat, :user_option])
     ensure_can_see_profile!(target_user)
 
     list = generate_list_for("topics_by", target_user, list_opts)
@@ -145,13 +145,13 @@ class ListController < ApplicationController
   end
 
   def self.generate_message_route(action)
-    define_method("#{action}") do
+    define_method(action.to_s) do
       if action == :private_messages_tag && !guardian.can_tag_pms?
         raise Discourse::NotFound
       end
 
       list_opts = build_topic_list_options
-      target_user = fetch_user_from_params({ include_inactive: current_user.try(:staff?) }, [:user_stat, :user_option])
+      target_user = fetch_user_from_params({include_inactive: current_user.try(:staff?)}, [:user_stat, :user_option])
       guardian.ensure_can_see_private_messages!(target_user.id)
       list = generate_list_for(action.to_s, target_user, list_opts)
       url_prefix = "topics"
@@ -161,7 +161,7 @@ class ListController < ApplicationController
     end
   end
 
-  %i{
+  %i[
     private_messages
     private_messages_sent
     private_messages_unread
@@ -169,14 +169,14 @@ class ListController < ApplicationController
     private_messages_group
     private_messages_group_archive
     private_messages_tag
-  }.each do |action|
+  ].each do |action|
     generate_message_route(action)
   end
 
   def latest_feed
     discourse_expires_in 1.minute
 
-    options = { order: 'created' }.merge(build_topic_list_options)
+    options = {order: "created"}.merge(build_topic_list_options)
 
     @title = "#{SiteSetting.title} - #{I18n.t("rss_description.latest")}"
     @link = "#{Discourse.base_url}/latest"
@@ -184,7 +184,7 @@ class ListController < ApplicationController
     @description = I18n.t("rss_description.latest")
     @topic_list = TopicQuery.new(nil, options).list_latest
 
-    render 'list', formats: [:rss]
+    render "list", formats: [:rss]
   end
 
   def top_feed
@@ -196,7 +196,7 @@ class ListController < ApplicationController
     @description = I18n.t("rss_description.top")
     @topic_list = TopicQuery.new(nil).list_top_for(SiteSetting.top_page_default_timeframe.to_sym)
 
-    render 'list', formats: [:rss]
+    render "list", formats: [:rss]
   end
 
   def category_feed
@@ -206,10 +206,10 @@ class ListController < ApplicationController
     @title = "#{@category.name} - #{SiteSetting.title}"
     @link = "#{Discourse.base_url_no_prefix}#{@category.url}"
     @atom_link = "#{Discourse.base_url_no_prefix}#{@category.url}.rss"
-    @description = "#{I18n.t('topics_in_category', category: @category.name)} #{@category.description}"
+    @description = "#{I18n.t("topics_in_category", category: @category.name)} #{@category.description}"
     @topic_list = TopicQuery.new(current_user).list_new_in_category(@category)
 
-    render 'list', formats: [:rss]
+    render "list", formats: [:rss]
   end
 
   def user_topics_feed
@@ -223,10 +223,10 @@ class ListController < ApplicationController
     @description = I18n.t("rss_description.user_topics", username: target_user.username)
 
     @topic_list = TopicQuery
-      .new(nil, order: 'created')
+      .new(nil, order: "created")
       .public_send("list_topics_by", target_user)
 
-    render 'list', formats: [:rss]
+    render "list", formats: [:rss]
   end
 
   def top(options = nil)
@@ -264,14 +264,13 @@ class ListController < ApplicationController
     end
 
     define_method("category_top_#{period}") do
-      self.public_send("top_#{period}", category: @category.id)
+      public_send("top_#{period}", category: @category.id)
     end
 
     define_method("category_none_top_#{period}") do
-      self.public_send("top_#{period}",
+      public_send("top_#{period}",
         category: @category.id,
-        no_subcategories: true
-      )
+        no_subcategories: true)
     end
 
     # rss feed
@@ -284,7 +283,7 @@ class ListController < ApplicationController
       @atom_link = "#{Discourse.base_url}/top/#{period}.rss"
       @topic_list = TopicQuery.new(nil).list_top_for(period)
 
-      render 'list', formats: [:rss]
+      render "list", formats: [:rss]
     end
   end
 
@@ -306,7 +305,7 @@ class ListController < ApplicationController
   private
 
   def page_params
-    route_params = { format: 'json' }
+    route_params = {format: "json"}
 
     if @category.present?
       slug_path = @category.slug_path
@@ -320,7 +319,7 @@ class ListController < ApplicationController
   end
 
   def set_category
-    parts = params.require(:category_slug_path_with_id).split('/')
+    parts = params.require(:category_slug_path_with_id).split("/")
 
     if !parts.empty? && parts.last =~ /\A\d+\Z/
       id = parts.pop.to_i
@@ -340,7 +339,7 @@ class ListController < ApplicationController
 
     raise Discourse::NotFound.new("category not found", check_permalinks: true) if @category.nil?
 
-    if !guardian.can_see?(@category)
+    unless guardian.can_see?(@category)
       if SiteSetting.detailed_404
         raise Discourse::InvalidAccess
       else
@@ -363,7 +362,7 @@ class ListController < ApplicationController
     params[:category] = @category.id.to_s
 
     @description_meta = if @category.uncategorized?
-      I18n.t('category.uncategorized_description', locale: SiteSetting.default_locale)
+      I18n.t("category.uncategorized_description", locale: SiteSetting.default_locale)
     else
       @category.description_text
     end
@@ -405,7 +404,7 @@ class ListController < ApplicationController
     end
     opts.delete(:category) if page_params.include?(:category_slug_path_with_id)
 
-    public_send(method, opts.merge(page_params)).sub('.json?', '?')
+    public_send(method, opts.merge(page_params)).sub(".json?", "?")
   end
 
   def ensure_can_see_profile!(target_user = nil)
@@ -432,13 +431,12 @@ class ListController < ApplicationController
     return [default_period, :all].uniq unless date
 
     periods = []
-    periods << :daily     if date > (1.week + 1.day).ago
-    periods << :weekly    if date > (1.month + 1.week).ago
-    periods << :monthly   if date > (3.months + 3.weeks).ago
+    periods << :daily if date > (1.week + 1.day).ago
+    periods << :weekly if date > (1.month + 1.week).ago
+    periods << :monthly if date > (3.months + 3.weeks).ago
     periods << :quarterly if date > (1.year + 1.month).ago
-    periods << :yearly    if date > 3.years.ago
+    periods << :yearly if date > 3.years.ago
     periods << :all
     periods
   end
-
 end

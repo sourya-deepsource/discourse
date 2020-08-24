@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::StaffActionLogsController < Admin::AdminController
-
   def index
     filters = params.slice(*UserHistory.staff_filters + [:page, :limit])
 
@@ -13,7 +12,8 @@ class Admin::StaffActionLogsController < Admin::AdminController
     staff_action_logs = staff_action_logs.offset(page * page_size).limit(page_size).to_a
 
     load_more_params = params.permit(UserHistory.staff_filters)
-    load_more_params.merge!(page: page + 1, page_size: page_size)
+    load_more_params[:page] = page + 1
+    load_more_params[:page_size] = page_size
 
     render_json_dump(
       staff_action_logs: serialize_data(staff_action_logs, UserHistorySerializer),
@@ -39,7 +39,7 @@ class Admin::StaffActionLogsController < Admin::AdminController
 
     diff_fields["name"] = {
       prev: prev&.dig("name").to_s,
-      cur: cur&.dig("name").to_s,
+      cur: cur&.dig("name").to_s
     }
 
     ["default", "user_selectable"].each do |f|
@@ -51,7 +51,7 @@ class Admin::StaffActionLogsController < Admin::AdminController
 
     diff_fields["color scheme"] = {
       prev: prev&.dig("color_scheme", "name").to_s,
-      cur: cur&.dig("color_scheme", "name").to_s,
+      cur: cur&.dig("color_scheme", "name").to_s
     }
 
     diff_fields["included themes"] = {
@@ -70,7 +70,7 @@ class Admin::StaffActionLogsController < Admin::AdminController
       output << diff.side_by_side_markdown
     end
 
-    render json: { side_by_side: output }
+    render json: {side_by_side: output}
   end
 
   protected
@@ -96,7 +96,7 @@ class Admin::StaffActionLogsController < Admin::AdminController
     UserHistory.staff_actions.sort.map do |name|
       {
         id: name,
-        action_id: UserHistory.actions[name] || UserHistory.actions[:custom_staff],
+        action_id: UserHistory.actions[name] || UserHistory.actions[:custom_staff]
       }
     end
   end

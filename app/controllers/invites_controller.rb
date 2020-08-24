@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class InvitesController < ApplicationController
-
   requires_login only: [
     :destroy, :create, :create_invite_link, :rescind_all_invites,
     :resend_invite, :resend_all_invites, :upload_csv
@@ -25,17 +24,17 @@ class InvitesController < ApplicationController
           invited_by: UserNameSerializer.new(invite.invited_by, scope: guardian, root: false),
           email: invite.email,
           username: UserNameSuggester.suggest(invite.email),
-          is_invite_link: invite.is_invite_link?)
-        )
+          is_invite_link: invite.is_invite_link?
+        ))
 
-        render layout: 'application'
+        render layout: "application"
       else
-        flash.now[:error] = I18n.t('invite.not_found_template', site_name: SiteSetting.title, base_url: Discourse.base_url)
-        render layout: 'no_ember'
+        flash.now[:error] = I18n.t("invite.not_found_template", site_name: SiteSetting.title, base_url: Discourse.base_url)
+        render layout: "no_ember"
       end
     else
-      flash.now[:error] = I18n.t('invite.not_found', base_url: Discourse.base_url)
-      render layout: 'no_ember'
+      flash.now[:error] = I18n.t("invite.not_found", base_url: Discourse.base_url)
+      render layout: "no_ember"
     end
   end
 
@@ -56,16 +55,16 @@ class InvitesController < ApplicationController
           log_on_user(user) if user.active?
           user.update_timezone_if_missing(params[:timezone])
           post_process_invite(user)
-          response = { success: true }
+          response = {success: true}
         else
-          response = { success: false, message: I18n.t('invite.not_found_json') }
+          response = {success: false, message: I18n.t("invite.not_found_json")}
         end
 
         if user.present? && user.active?
           topic = invite.topics.first
-          response[:redirect_to] = topic.present? ? path("#{topic.relative_url}") : path("/")
+          response[:redirect_to] = topic.present? ? path(topic.relative_url.to_s) : path("/")
         elsif user.present?
-          response[:message] = I18n.t('invite.confirm_email')
+          response[:message] = I18n.t("invite.confirm_email")
         end
 
         render json: response
@@ -73,13 +72,13 @@ class InvitesController < ApplicationController
         render json: {
           success: false,
           errors: e.record&.errors&.to_hash || {},
-          message: I18n.t('invite.error_message')
+          message: I18n.t("invite.error_message")
         }
       rescue Invite::UserExists => e
-        render json: { success: false, message: [e.message] }
+        render json: {success: false, message: [e.message]}
       end
     else
-      render json: { success: false, message: I18n.t('invite.not_found_json') }
+      render json: {success: false, message: I18n.t("invite.not_found_json")}
     end
   end
 
@@ -106,7 +105,7 @@ class InvitesController < ApplicationController
         render json: failed_json, status: 422
       end
     rescue Invite::UserExists, ActiveRecord::RecordInvalid => e
-      render json: { errors: [e.message] }, status: 422
+      render json: {errors: [e.message]}, status: 422
     end
   end
 
@@ -122,7 +121,7 @@ class InvitesController < ApplicationController
       group_ids: params[:group_ids],
       group_names: params[:group_names]
     )
-    if !guardian.can_invite_to_forum?(groups)
+    unless guardian.can_invite_to_forum?(groups)
       raise StandardError.new I18n.t("invite.cant_invite_to_group")
     end
     group_ids = groups.map(&:id)
@@ -160,7 +159,7 @@ class InvitesController < ApplicationController
       render json: failed_json, status: 422
     end
   rescue => e
-    render json: { errors: [e.message] }, status: 422
+    render json: {errors: [e.message]}, status: 422
   end
 
   def destroy
@@ -188,7 +187,6 @@ class InvitesController < ApplicationController
     raise Discourse::InvalidParameters.new(:email) if invite.blank?
     invite.resend_invite
     render json: success_json
-
   rescue RateLimiter::LimitExceeded
     render_json_error(I18n.t("rate_limiter.slow_down"))
   end
@@ -201,36 +199,34 @@ class InvitesController < ApplicationController
   end
 
   def upload_csv
-    require 'csv'
+    require "csv"
 
     guardian.ensure_can_bulk_invite_to_forum!(current_user)
 
     hijack do
-      begin
-        file = params[:file] || params[:files].first
+      file = params[:file] || params[:files].first
 
-        count = 0
-        invites = []
-        max_bulk_invites = SiteSetting.max_bulk_invites
-        CSV.foreach(file.tempfile) do |row|
-          count += 1
-          invites.push(email: row[0], groups: row[1], topic_id: row[2]) if row[0].present?
-          break if count >= max_bulk_invites
-        end
+      count = 0
+      invites = []
+      max_bulk_invites = SiteSetting.max_bulk_invites
+      CSV.foreach(file.tempfile) do |row|
+        count += 1
+        invites.push(email: row[0], groups: row[1], topic_id: row[2]) if row[0].present?
+        break if count >= max_bulk_invites
+      end
 
-        if invites.present?
-          Jobs.enqueue(:bulk_invite, invites: invites, current_user_id: current_user.id)
-          if count >= max_bulk_invites
-            render json: failed_json.merge(errors: [I18n.t("bulk_invite.max_rows", max_bulk_invites: max_bulk_invites)]), status: 422
-          else
-            render json: success_json
-          end
+      if invites.present?
+        Jobs.enqueue(:bulk_invite, invites: invites, current_user_id: current_user.id)
+        if count >= max_bulk_invites
+          render json: failed_json.merge(errors: [I18n.t("bulk_invite.max_rows", max_bulk_invites: max_bulk_invites)]), status: 422
         else
-          render json: failed_json.merge(errors: [I18n.t("bulk_invite.error")]), status: 422
+          render json: success_json
         end
-      rescue
+      else
         render json: failed_json.merge(errors: [I18n.t("bulk_invite.error")]), status: 422
       end
+    rescue
+      render json: failed_json.merge(errors: [I18n.t("bulk_invite.error")]), status: 422
     end
   end
 
@@ -246,8 +242,8 @@ class InvitesController < ApplicationController
 
   def ensure_new_registrations_allowed
     unless SiteSetting.allow_new_registrations
-      flash[:error] = I18n.t('login.new_registrations_disabled')
-      render layout: 'no_ember'
+      flash[:error] = I18n.t("login.new_registrations_disabled")
+      render layout: "no_ember"
       false
     end
   end
@@ -255,7 +251,7 @@ class InvitesController < ApplicationController
   def ensure_not_logged_in
     if current_user
       flash[:error] = I18n.t("login.already_logged_in", current_user: current_user.username)
-      render layout: 'no_ember'
+      render layout: "no_ember"
       false
     end
   end
@@ -263,7 +259,7 @@ class InvitesController < ApplicationController
   private
 
   def post_process_invite(user)
-    user.enqueue_welcome_message('welcome_invite') if user.send_welcome_message
+    user.enqueue_welcome_message("welcome_invite") if user.send_welcome_message
 
     Group.refresh_automatic_groups!(:admins, :moderators, :staff) if user.staff?
 
@@ -278,9 +274,8 @@ class InvitesController < ApplicationController
     email_token = user.email_tokens.create!(email: user.email)
 
     Jobs.enqueue(:critical_user_email,
-                 type: :signup,
-                 user_id: user.id,
-                 email_token: email_token.token
-    )
+      type: :signup,
+      user_id: user.id,
+      email_token: email_token.token)
   end
 end

@@ -1,11 +1,9 @@
-# -*- encoding : utf-8 -*-
 # frozen_string_literal: true
 
 class Users::OmniauthCallbacksController < ApplicationController
-
   skip_before_action :redirect_to_login_if_required
 
-  layout 'no_ember'
+  layout "no_ember"
 
   # need to be able to call this
   skip_before_action :check_xhr
@@ -16,7 +14,7 @@ class Users::OmniauthCallbacksController < ApplicationController
 
   def confirm_request
     self.class.find_authenticator(params[:provider])
-    render locals: { hide_auth_buttons: true }
+    render locals: {hide_auth_buttons: true}
   end
 
   def complete
@@ -38,7 +36,7 @@ class Users::OmniauthCallbacksController < ApplicationController
       DiscourseEvent.trigger(:after_auth, authenticator, @auth_result)
     end
 
-    preferred_origin = request.env['omniauth.origin']
+    preferred_origin = request.env["omniauth.origin"]
 
     if SiteSetting.enable_sso_provider && payload = cookies.delete(:sso_payload)
       preferred_origin = session_sso_provider_url + "?" + payload
@@ -50,13 +48,13 @@ class Users::OmniauthCallbacksController < ApplicationController
     if preferred_origin.present?
       parsed = begin
         URI.parse(preferred_origin)
-      rescue URI::Error
+               rescue URI::Error
       end
 
       if parsed && # Valid
-         (parsed.host == nil || parsed.host == Discourse.current_hostname) && # Local
-         !parsed.path.starts_with?(Discourse.base_uri("/auth/")) # Not /auth URL
-        @origin = +"#{parsed.path}"
+          (parsed.host.nil? || parsed.host == Discourse.current_hostname) && # Local
+          !parsed.path.starts_with?(Discourse.base_uri("/auth/")) # Not /auth URL
+        @origin = +parsed.path.to_s
         @origin << "?#{parsed.query}" if parsed.query
       end
     end
@@ -69,11 +67,11 @@ class Users::OmniauthCallbacksController < ApplicationController
 
     if @auth_result.failed?
       flash[:error] = @auth_result.failed_reason.html_safe
-      render('failure')
+      render("failure")
     else
       @auth_result.authenticator_name = authenticator.name
       complete_response_data
-      cookies['_bypass_cache'] = true
+      cookies["_bypass_cache"] = true
       cookies[:authentication_data] = {
         value: @auth_result.to_client_hash.to_json,
         path: Discourse.base_uri("/")
@@ -85,14 +83,14 @@ class Users::OmniauthCallbacksController < ApplicationController
   def failure
     error_key = params[:message].to_s.gsub(/[^\w-]/, "") || "generic"
     flash[:error] = I18n.t("login.omniauth_error.#{error_key}", default: I18n.t("login.omniauth_error.generic"))
-    render 'failure'
+    render "failure"
   end
 
   def self.find_authenticator(name)
     Discourse.enabled_authenticators.each do |authenticator|
       return authenticator if authenticator.name == name
     end
-    raise Discourse::InvalidAccess.new(I18n.t('authenticator_not_found'))
+    raise Discourse::InvalidAccess.new(I18n.t("authenticator_not_found"))
   end
 
   protected
@@ -123,7 +121,7 @@ class Users::OmniauthCallbacksController < ApplicationController
 
         # Ensure there is an active email token
         unless EmailToken.where(email: user.email, confirmed: true).exists? ||
-          user.email_tokens.active.where(email: user.email).exists?
+            user.email_tokens.active.where(email: user.email).exists?
           user.email_tokens.create!(email: user.email)
         end
 
@@ -150,5 +148,4 @@ class Users::OmniauthCallbacksController < ApplicationController
       end
     end
   end
-
 end

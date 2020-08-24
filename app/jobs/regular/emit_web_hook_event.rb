@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require 'excon'
+require "excon"
 
 module Jobs
   class EmitWebHookEvent < ::Jobs::Base
-    PING_EVENT = 'ping'
+    PING_EVENT = "ping"
     MAX_RETRY_COUNT = 4
     RETRY_BACKOFF = 5
 
@@ -132,28 +132,28 @@ module Jobs
     def build_webhook_headers(uri, web_hook_body, web_hook_event)
       content_type =
         case @web_hook.content_type
-        when WebHook.content_types['application/x-www-form-urlencoded']
-          'application/x-www-form-urlencoded'
+        when WebHook.content_types["application/x-www-form-urlencoded"]
+          "application/x-www-form-urlencoded"
         else
-          'application/json'
+          "application/json"
         end
 
       headers = {
-        'Accept' => '*/*',
-        'Connection' => 'close',
-        'Content-Length' => web_hook_body.bytesize,
-        'Content-Type' => content_type,
-        'Host' => uri.host,
-        'User-Agent' => "Discourse/#{Discourse::VERSION::STRING}",
-        'X-Discourse-Instance' => Discourse.base_url,
-        'X-Discourse-Event-Id' => web_hook_event.id,
-        'X-Discourse-Event-Type' => @arguments[:event_type]
+        "Accept" => "*/*",
+        "Connection" => "close",
+        "Content-Length" => web_hook_body.bytesize,
+        "Content-Type" => content_type,
+        "Host" => uri.host,
+        "User-Agent" => "Discourse/#{Discourse::VERSION::STRING}",
+        "X-Discourse-Instance" => Discourse.base_url,
+        "X-Discourse-Event-Id" => web_hook_event.id,
+        "X-Discourse-Event-Type" => @arguments[:event_type]
       }
 
-      headers['X-Discourse-Event'] = @arguments[:event_name] if @arguments[:event_name].present?
+      headers["X-Discourse-Event"] = @arguments[:event_name] if @arguments[:event_name].present?
 
       if @web_hook.secret.present?
-        headers['X-Discourse-Event-Signature'] = "sha256=#{OpenSSL::HMAC.hexdigest("sha256", @web_hook.secret, web_hook_body)}"
+        headers["X-Discourse-Event-Signature"] = "sha256=#{OpenSSL::HMAC.hexdigest("sha256", @web_hook.secret, web_hook_body)}"
       end
 
       headers
@@ -163,7 +163,7 @@ module Jobs
       body = {}
 
       if ping_event?(@arguments[:event_type])
-        body['ping'] = "OK"
+        body["ping"] = "OK"
       else
         body[@arguments[:event_type]] = JSON.parse(@arguments[:payload])
       end
@@ -175,6 +175,5 @@ module Jobs
     def create_webhook_event(web_hook_body)
       WebHookEvent.create!(web_hook: @web_hook, payload: web_hook_body)
     end
-
   end
 end

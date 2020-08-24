@@ -7,7 +7,7 @@ class UserBadgesController < ApplicationController
     params.permit [:granted_before, :offset, :username]
 
     badge = fetch_badge_from_params
-    user_badges = badge.user_badges.order('granted_at DESC, id DESC').limit(96)
+    user_badges = badge.user_badges.order("granted_at DESC, id DESC").limit(96)
     user_badges = user_badges.includes(:user, :granted_by, badge: :badge_type, post: :topic, user: :primary_group)
 
     grant_count = nil
@@ -61,7 +61,7 @@ class UserBadgesController < ApplicationController
 
     if params[:reason].present?
       unless is_badge_reason_valid? params[:reason]
-        return render json: failed_json.merge(message: I18n.t('invalid_grant_badge_reason_link')), status: 400
+        return render json: failed_json.merge(message: I18n.t("invalid_grant_badge_reason_link")), status: 400
       end
 
       if route = Discourse.route_for(params[:reason])
@@ -120,6 +120,6 @@ class UserBadgesController < ApplicationController
 
   def is_badge_reason_valid?(reason)
     route = Discourse.route_for(reason)
-    route && (route[:controller] == 'posts' || route[:controller] == 'topics')
+    route && (route[:controller] == "posts" || route[:controller] == "topics")
   end
 end

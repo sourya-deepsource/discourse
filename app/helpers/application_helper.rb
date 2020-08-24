@@ -1,7 +1,7 @@
-# coding: utf-8
 # frozen_string_literal: true
-require 'current_user'
-require 'canonical_url'
+
+require "current_user"
+require "canonical_url"
 
 module ApplicationHelper
   include CurrentUser
@@ -16,7 +16,7 @@ module ApplicationHelper
   def google_universal_analytics_json(ua_domain_name = nil)
     result = {}
     if ua_domain_name
-      result[:cookieDomain] = ua_domain_name.gsub(/^http(s)?:\/\//, '')
+      result[:cookieDomain] = ua_domain_name.gsub(/^http(s)?:\/\//, "")
     end
     if current_user.present?
       result[:userId] = current_user.id
@@ -36,7 +36,7 @@ module ApplicationHelper
   end
 
   def shared_session_key
-    if SiteSetting.long_polling_base_url != '/' && current_user
+    if SiteSetting.long_polling_base_url != "/" && current_user
       sk = "shared_session_key"
       return request.env[sk] if request.env[sk]
 
@@ -82,9 +82,9 @@ module ApplicationHelper
     end
 
     if Rails.env == "development"
-      if !path.include?("?")
+      unless path.include?("?")
         # cache breaker for mobile iOS
-        path = path + "?#{Time.now.to_f}"
+        path += "?#{Time.now.to_f}"
       end
     end
 
@@ -114,20 +114,20 @@ module ApplicationHelper
 
   def html_classes
     list = []
-    list << (mobile_view? ? 'mobile-view' : 'desktop-view')
-    list << (mobile_device? ? 'mobile-device' : 'not-mobile-device')
-    list << 'ios-device' if ios_device?
-    list << 'rtl' if rtl?
+    list << (mobile_view? ? "mobile-view" : "desktop-view")
+    list << (mobile_device? ? "mobile-device" : "not-mobile-device")
+    list << "ios-device" if ios_device?
+    list << "rtl" if rtl?
     list << text_size_class
-    list << 'anon' unless current_user
-    list.join(' ')
+    list << "anon" unless current_user
+    list.join(" ")
   end
 
   def body_classes
     result = ApplicationHelper.extra_body_classes.to_a
 
     if @category && @category.url.present?
-      result << "category-#{@category.url.sub(/^\/c\//, '').gsub(/\//, '-')}"
+      result << "category-#{@category.url.sub(/^\/c\//, "").tr("/", "-")}"
     end
 
     if current_user.present? &&
@@ -136,14 +136,14 @@ module ApplicationHelper
       result << "primary-group-#{primary_group_name.downcase}"
     end
 
-    result.join(' ')
+    result.join(" ")
   end
 
   def text_size_class
     requested_cookie_size, cookie_seq = cookies[:text_size]&.split("|")
     server_seq = current_user&.user_option&.text_size_seq
     if cookie_seq && server_seq && cookie_seq.to_i >= server_seq &&
-              UserOption.text_sizes.keys.include?(requested_cookie_size&.to_sym)
+        UserOption.text_sizes.keys.include?(requested_cookie_size&.to_sym)
       cookie_size = requested_cookie_size
     end
 
@@ -154,11 +154,11 @@ module ApplicationHelper
   def escape_unicode(javascript)
     if javascript
       javascript = javascript.scrub
-      javascript.gsub!(/\342\200\250/u, '&#x2028;')
+      javascript.gsub!(/\342\200\250/u, "&#x2028;")
       javascript.gsub!(/(<\/)/u, '\u003C/')
       javascript
     else
-      ''
+      ""
     end
   end
 
@@ -227,45 +227,47 @@ module ApplicationHelper
 
     # Use the correct scheme for opengraph/twitter image
     opts[:image] = get_absolute_image_url(opts[:image]) if opts[:image].present?
-    opts[:twitter_summary_large_image] =
-      get_absolute_image_url(opts[:twitter_summary_large_image]) if opts[:twitter_summary_large_image].present?
+    if opts[:twitter_summary_large_image].present?
+      opts[:twitter_summary_large_image] =
+        get_absolute_image_url(opts[:twitter_summary_large_image])
+    end
 
     # Add opengraph & twitter tags
     result = []
-    result << tag(:meta, property: 'og:site_name', content: SiteSetting.title)
+    result << tag(:meta, property: "og:site_name", content: SiteSetting.title)
 
     if opts[:twitter_summary_large_image].present?
-      result << tag(:meta, name: 'twitter:card', content: "summary_large_image")
+      result << tag(:meta, name: "twitter:card", content: "summary_large_image")
       result << tag(:meta, name: "twitter:image", content: opts[:twitter_summary_large_image])
     elsif opts[:image].present?
-      result << tag(:meta, name: 'twitter:card', content: "summary")
+      result << tag(:meta, name: "twitter:card", content: "summary")
       result << tag(:meta, name: "twitter:image", content: opts[:image])
     else
-      result << tag(:meta, name: 'twitter:card', content: "summary")
+      result << tag(:meta, name: "twitter:card", content: "summary")
     end
     result << tag(:meta, property: "og:image", content: opts[:image]) if opts[:image].present?
 
     [:url, :title, :description].each do |property|
       if opts[property].present?
         content = (property == :url ? opts[property] : gsub_emoji_to_unicode(opts[property]))
-        result << tag(:meta, { property: "og:#{property}", content: content }, nil, true)
-        result << tag(:meta, { name: "twitter:#{property}", content: content }, nil, true)
+        result << tag(:meta, {property: "og:#{property}", content: content}, nil, true)
+        result << tag(:meta, {name: "twitter:#{property}", content: content}, nil, true)
       end
     end
 
     if opts[:read_time] && opts[:read_time] > 0 && opts[:like_count] && opts[:like_count] > 0
-      result << tag(:meta, name: 'twitter:label1', value: I18n.t("reading_time"))
-      result << tag(:meta, name: 'twitter:data1', value: "#{opts[:read_time]} mins 🕑")
-      result << tag(:meta, name: 'twitter:label2', value: I18n.t("likes"))
-      result << tag(:meta, name: 'twitter:data2', value: "#{opts[:like_count]} ❤")
+      result << tag(:meta, name: "twitter:label1", value: I18n.t("reading_time"))
+      result << tag(:meta, name: "twitter:data1", value: "#{opts[:read_time]} mins 🕑")
+      result << tag(:meta, name: "twitter:label2", value: I18n.t("likes"))
+      result << tag(:meta, name: "twitter:data2", value: "#{opts[:like_count]} ❤")
     end
 
     if opts[:published_time]
-      result << tag(:meta, property: 'article:published_time', content: opts[:published_time])
+      result << tag(:meta, property: "article:published_time", content: opts[:published_time])
     end
 
     if opts[:ignore_canonical]
-      result << tag(:meta, property: 'og:ignore_canonical', content: true)
+      result << tag(:meta, property: "og:ignore_canonical", content: true)
     end
 
     result.join("\n")
@@ -273,16 +275,16 @@ module ApplicationHelper
 
   def render_sitelinks_search_tag
     json = {
-      '@context' => 'http://schema.org',
-      '@type' => 'WebSite',
-      url: Discourse.base_url,
-      potentialAction: {
-        '@type' => 'SearchAction',
-        target: "#{Discourse.base_url}/search?q={search_term_string}",
-        'query-input' => 'required name=search_term_string',
+      "@context" => "http://schema.org",
+      "@type" => "WebSite",
+      :url => Discourse.base_url,
+      :potentialAction => {
+        "@type" => "SearchAction",
+        :target => "#{Discourse.base_url}/search?q={search_term_string}",
+        "query-input" => "required name=search_term_string"
       }
     }
-    content_tag(:script, MultiJson.dump(json).html_safe, type: 'application/ld+json')
+    content_tag(:script, MultiJson.dump(json).html_safe, type: "application/ld+json")
   end
 
   def gsub_emoji_to_unicode(str)
@@ -300,7 +302,7 @@ module ApplicationHelper
   end
 
   def login_path
-    "#{Discourse::base_uri}/login"
+    "#{Discourse.base_uri}/login"
   end
 
   def mobile_view?
@@ -349,8 +351,8 @@ module ApplicationHelper
     safe_mode = []
 
     safe_mode << ApplicationController::NO_CUSTOM if customization_disabled?
-    safe_mode << ApplicationController::NO_PLUGINS if !allow_plugins?
-    safe_mode << ApplicationController::ONLY_OFFICIAL if !allow_third_party_plugins?
+    safe_mode << ApplicationController::NO_PLUGINS unless allow_plugins?
+    safe_mode << ApplicationController::ONLY_OFFICIAL unless allow_third_party_plugins?
 
     safe_mode.join(",")
   end
@@ -369,7 +371,6 @@ module ApplicationHelper
   end
 
   def server_plugin_outlet(name)
-
     # Don't evaluate plugins in test
     return "" if Rails.env.test?
 
@@ -383,14 +384,12 @@ module ApplicationHelper
   end
 
   def topic_featured_link_domain(link)
-    begin
-      uri = UrlHelper.encode_and_parse(link)
-      uri = URI.parse("http://#{uri}") if uri.scheme.nil?
-      host = uri.host.downcase
-      host.start_with?('www.') ? host[4..-1] : host
-    rescue
-      ''
-    end
+    uri = UrlHelper.encode_and_parse(link)
+    uri = URI.parse("http://#{uri}") if uri.scheme.nil?
+    host = uri.host.downcase
+    host.start_with?("www.") ? host[4..-1] : host
+  rescue
+    ""
   end
 
   def theme_ids
@@ -447,18 +446,18 @@ module ApplicationHelper
       ids = theme_ids
     end
 
-    Stylesheet::Manager.stylesheet_link_tag(name, 'all', ids)
+    Stylesheet::Manager.stylesheet_link_tag(name, "all", ids)
   end
 
   def discourse_color_scheme_stylesheets
     result = +""
-    result << Stylesheet::Manager.color_scheme_stylesheet_link_tag(scheme_id, 'all', theme_ids)
+    result << Stylesheet::Manager.color_scheme_stylesheet_link_tag(scheme_id, "all", theme_ids)
 
     user_dark_scheme_id = current_user&.user_option&.dark_scheme_id
-    dark_scheme_id =  user_dark_scheme_id || SiteSetting.default_dark_mode_color_scheme_id
+    dark_scheme_id = user_dark_scheme_id || SiteSetting.default_dark_mode_color_scheme_id
 
     if dark_scheme_id != -1
-      result << Stylesheet::Manager.color_scheme_stylesheet_link_tag(dark_scheme_id, '(prefers-color-scheme: dark)', theme_ids)
+      result << Stylesheet::Manager.color_scheme_stylesheet_link_tag(dark_scheme_id, "(prefers-color-scheme: dark)", theme_ids)
     end
     result.html_safe
   end
@@ -468,20 +467,20 @@ module ApplicationHelper
   end
 
   def preloaded_json
-    return '{}' if @preloaded.blank?
+    return "{}" if @preloaded.blank?
     @preloaded.transform_values { |value| escape_unicode(value) }.to_json
   end
 
   def client_side_setup_data
-    service_worker_url = Rails.env.development? ? 'service-worker.js' : Rails.application.assets_manifest.assets['service-worker.js']
+    service_worker_url = Rails.env.development? ? "service-worker.js" : Rails.application.assets_manifest.assets["service-worker.js"]
 
     setup_data = {
       cdn: Rails.configuration.action_controller.asset_host,
       base_url: Discourse.base_url,
-      base_uri: Discourse::base_uri,
+      base_uri: Discourse.base_uri,
       environment: Rails.env,
       letter_avatar_version: LetterAvatar.version,
-      markdown_it_url: script_asset_path('markdown-it-bundle'),
+      markdown_it_url: script_asset_path("markdown-it-bundle"),
       service_worker_url: service_worker_url,
       default_locale: SiteSetting.default_locale,
       asset_version: Discourse.assets_digest,
@@ -495,7 +494,7 @@ module ApplicationHelper
     if Rails.env.development?
       setup_data[:svg_icon_list] = SvgSprite.all_icons(theme_ids)
 
-      if ENV['DEBUG_PRELOADED_APP_DATA']
+      if ENV["DEBUG_PRELOADED_APP_DATA"]
         setup_data[:debug_preloaded_app_data] = true
       end
     end
@@ -514,10 +513,10 @@ module ApplicationHelper
 
   def get_absolute_image_url(link)
     absolute_url = link
-    if link.start_with?('//')
+    if link.start_with?("//")
       uri = URI(Discourse.base_url)
       absolute_url = "#{uri.scheme}:#{link}"
-    elsif link.start_with?('/uploads/', '/images/', '/user_avatar/')
+    elsif link.start_with?("/uploads/", "/images/", "/user_avatar/")
       absolute_url = "#{Discourse.base_url}#{link}"
     elsif GlobalSetting.relative_url_root && link.start_with?(GlobalSetting.relative_url_root)
       absolute_url = "#{Discourse.base_url_no_prefix}#{link}"
@@ -527,16 +526,16 @@ module ApplicationHelper
 
   def can_sign_up?
     SiteSetting.allow_new_registrations &&
-    !SiteSetting.invite_only &&
-    !SiteSetting.enable_sso
+      !SiteSetting.invite_only &&
+      !SiteSetting.enable_sso
   end
 
   def rss_creator(user)
     if user
       if SiteSetting.prioritize_username_in_ux
-        "#{user.username}"
+        user.username.to_s
       else
-        "#{user.name.presence || user.username }"
+        (user.name.presence || user.username).to_s
       end
     end
   end

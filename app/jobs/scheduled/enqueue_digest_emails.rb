@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class EnqueueDigestEmails < ::Jobs::Scheduled
     every 30.minutes
 
@@ -32,7 +31,5 @@ module Jobs
 
       query.pluck(:id)
     end
-
   end
-
 end

@@ -18,27 +18,24 @@ class PermalinksController < ApplicationController
   end
 
   def check
-    begin
-      raise Discourse::NotFound if params[:path].blank?
+    raise Discourse::NotFound if params[:path].blank?
 
-      permalink = Permalink.find_by_url(params[:path])
+    permalink = Permalink.find_by_url(params[:path])
 
-      raise Discourse::NotFound unless permalink
+    raise Discourse::NotFound unless permalink
 
-      data = {
-        found: true,
-        internal: permalink.external_url.nil?,
-        target_url: permalink.target_url,
-      }
+    data = {
+      found: true,
+      internal: permalink.external_url.nil?,
+      target_url: permalink.target_url
+    }
 
-      render json: MultiJson.dump(data)
-    rescue Discourse::NotFound
-      data = {
-        found: false,
-        html: build_not_found_page(status: 200),
-      }
-      render json: MultiJson.dump(data)
-    end
+    render json: MultiJson.dump(data)
+  rescue Discourse::NotFound
+    data = {
+      found: false,
+      html: build_not_found_page(status: 200)
+    }
+    render json: MultiJson.dump(data)
   end
-
 end

@@ -37,7 +37,7 @@ module UserNotificationsHelper
     result = +""
     length = 0
 
-    doc.css('body > p, aside.onebox, body > ul, body > blockquote').each do |node|
+    doc.css("body > p, aside.onebox, body > ul, body > blockquote").each do |node|
       if node.text.present?
         result << node.to_s
         length += node.inner_text.length
@@ -49,7 +49,7 @@ module UserNotificationsHelper
 
     # If there is no first paragaph with text, return the first paragraph with
     # something else (an image) or div (a onebox).
-    doc.css('body > p:not(:empty), body > div:not(:empty), body > p > div.lightbox-wrapper img').first
+    doc.css("body > p:not(:empty), body > div:not(:empty), body > p > div.lightbox-wrapper img").first
   end
 
   def email_excerpt(html_arg, post = nil)
@@ -58,7 +58,7 @@ module UserNotificationsHelper
   end
 
   def normalize_name(name)
-    name.downcase.gsub(/[\s_-]/, '')
+    name.downcase.gsub(/[\s_-]/, "")
   end
 
   def show_username_on_post(post)
@@ -94,7 +94,7 @@ module UserNotificationsHelper
   end
 
   def show_image_with_url(url)
-    !(url.nil? || url.downcase.end_with?('svg'))
+    !(url.nil? || url.downcase.end_with?("svg"))
   end
 
   def email_image_url(basename)
@@ -106,5 +106,4 @@ module UserNotificationsHelper
   rescue URI::Error
     href
   end
-
 end

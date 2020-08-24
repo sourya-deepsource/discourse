@@ -12,18 +12,18 @@ class PostReadersController < ApplicationController
       .where(staged: false)
       .where.not(id: post.user_id)
       .joins(:topic_users)
-      .where.not(topic_users: { last_read_post_number: nil })
-      .where('topic_users.topic_id = ? AND topic_users.last_read_post_number >= ?', post.topic_id, post.post_number)
+      .where.not(topic_users: {last_read_post_number: nil})
+      .where("topic_users.topic_id = ? AND topic_users.last_read_post_number >= ?", post.topic_id, post.post_number)
 
-    readers = readers.where('admin OR moderator') if post.whisper?
+    readers = readers.where("admin OR moderator") if post.whisper?
 
-    readers = readers.map do |r|
+    readers = readers.map { |r|
       {
         id: r.id, avatar_template: r.avatar_template,
         username: r.username,
         username_lower: r.username_lower
       }
-    end
+    }
 
     render_json_dump(post_readers: readers)
   end
@@ -34,7 +34,7 @@ class PostReadersController < ApplicationController
     show_readers = GroupUser
       .where(user: current_user)
       .joins(:group)
-      .where(groups: { id: post.topic.topic_allowed_groups.map(&:group_id), publish_read_state: true }).exists?
+      .where(groups: {id: post.topic.topic_allowed_groups.map(&:group_id), publish_read_state: true}).exists?
 
     raise Discourse::InvalidAccess unless show_readers
   end

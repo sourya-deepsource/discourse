@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class ConfirmSnsSubscription < ::Jobs::Base
     sidekiq_options retry: false
 
@@ -16,7 +15,5 @@ module Jobs
       # confirm subscription by visiting the URL
       open(subscribe_url)
     end
-
   end
-
 end

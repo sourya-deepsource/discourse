@@ -23,8 +23,8 @@ class UploadsController < ApplicationController
       return render json: failed_json, status: 422
     end
 
-    url    = params[:url]
-    file   = params[:file] || params[:files]&.first
+    url = params[:url]
+    file = params[:file] || params[:files]&.first
     pasted = params[:pasted] == "true"
     for_private_message = params[:for_private_message] == "true"
     for_site_setting = params[:for_site_setting] == "true"
@@ -34,23 +34,21 @@ class UploadsController < ApplicationController
     # note, atm hijack is processed in its own context and has not access to controller
     # longer term we may change this
     hijack do
-      begin
-        info = UploadsController.create_upload(
-          current_user: me,
-          file: file,
-          url: url,
-          type: type,
-          for_private_message: for_private_message,
-          for_site_setting: for_site_setting,
-          pasted: pasted,
-          is_api: is_api,
-          retain_hours: retain_hours
-        )
-      rescue => e
-        render json: failed_json.merge(message: e.message&.split("\n")&.first), status: 422
-      else
-        render json: UploadsController.serialize_upload(info), status: Upload === info ? 200 : 422
-      end
+      info = UploadsController.create_upload(
+        current_user: me,
+        file: file,
+        url: url,
+        type: type,
+        for_private_message: for_private_message,
+        for_site_setting: for_site_setting,
+        pasted: pasted,
+        is_api: is_api,
+        retain_hours: retain_hours
+      )
+    rescue => e
+      render json: failed_json.merge(message: e.message&.split("\n")&.first), status: 422
+    else
+      render json: UploadsController.serialize_upload(info), status: Upload === info ? 200 : 422
     end
   end
 
@@ -58,7 +56,7 @@ class UploadsController < ApplicationController
     params.permit(short_urls: [])
     uploads = []
 
-    if (params[:short_urls] && params[:short_urls].length > 0)
+    if params[:short_urls] && params[:short_urls].length > 0
       PrettyText::Helpers.lookup_upload_urls(params[:short_urls]).each do |short_url, paths|
         uploads << {
           short_url: short_url,
@@ -75,7 +73,7 @@ class UploadsController < ApplicationController
     # do not serve uploads requested via XHR to prevent XSS
     return xhr_not_allowed if request.xhr?
 
-    return render_404 if !RailsMultisite::ConnectionManagement.has_db?(params[:site])
+    return render_404 unless RailsMultisite::ConnectionManagement.has_db?(params[:site])
 
     RailsMultisite::ConnectionManagement.with_connection(params[:site]) do |db|
       return render_404 if SiteSetting.prevent_anons_from_downloading_files && current_user.nil?
@@ -121,7 +119,7 @@ class UploadsController < ApplicationController
   def show_secure
     # do not serve uploads requested via XHR to prevent XSS
     return xhr_not_allowed if request.xhr?
-    return render_404 if !Discourse.store.external?
+    return render_404 unless Discourse.store.external?
 
     path_with_ext = "#{params[:path]}.#{params[:extension]}"
 
@@ -148,7 +146,7 @@ class UploadsController < ApplicationController
 
   def handle_secure_upload_request(upload, path_with_ext = nil)
     if upload.access_control_post_id.present?
-      raise Discourse::InvalidAccess if !guardian.can_see?(upload.access_control_post)
+      raise Discourse::InvalidAccess unless guardian.can_see?(upload.access_control_post)
     else
       return render_404 if current_user.nil?
     end
@@ -199,24 +197,28 @@ class UploadsController < ApplicationController
   end
 
   def self.create_upload(current_user:,
-                         file:,
-                         url:,
-                         type:,
-                         for_private_message:,
-                         for_site_setting:,
-                         pasted:,
-                         is_api:,
-                         retain_hours:)
+    file:,
+    url:,
+    type:,
+    for_private_message:,
+    for_site_setting:,
+    pasted:,
+    is_api:,
+    retain_hours:)
 
     if file.nil?
       if url.present? && is_api
         maximum_upload_size = [SiteSetting.max_image_size_kb, SiteSetting.max_attachment_size_kb].max.kilobytes
-        tempfile = FileHelper.download(
-          url,
-          follow_redirect: true,
-          max_file_size: maximum_upload_size,
-          tmp_file_name: "discourse-upload-#{type}"
-        ) rescue nil
+        tempfile = begin
+                     FileHelper.download(
+                       url,
+                       follow_redirect: true,
+                       max_file_size: maximum_upload_size,
+                       tmp_file_name: "discourse-upload-#{type}"
+                     )
+                   rescue
+                     nil
+                   end
         filename = File.basename(URI.parse(url).path)
       end
     else
@@ -224,13 +226,13 @@ class UploadsController < ApplicationController
       filename = file.original_filename
     end
 
-    return { errors: [I18n.t("upload.file_missing")] } if tempfile.nil?
+    return {errors: [I18n.t("upload.file_missing")]} if tempfile.nil?
 
     opts = {
       type: type,
       for_private_message: for_private_message,
       for_site_setting: for_site_setting,
-      pasted: pasted,
+      pasted: pasted
     }
 
     upload = UploadCreator.new(tempfile, filename, opts).create_for(current_user.id)
@@ -239,7 +241,7 @@ class UploadsController < ApplicationController
       upload.update_columns(retain_hours: retain_hours) if retain_hours > 0
     end
 
-    upload.errors.empty? ? upload : { errors: upload.errors.to_hash.values.flatten }
+    upload.errors.empty? ? upload : {errors: upload.errors.to_hash.values.flatten}
   ensure
     tempfile&.close!
   end
@@ -263,5 +265,4 @@ class UploadsController < ApplicationController
 
     send_file(file_path, opts)
   end
-
 end

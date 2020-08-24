@@ -6,7 +6,7 @@ class MetadataController < ApplicationController
 
   def manifest
     expires_in 1.minutes
-    render json: default_manifest.to_json, content_type: 'application/manifest+json'
+    render json: default_manifest.to_json, content_type: "application/manifest+json"
   end
 
   def opensearch
@@ -17,13 +17,13 @@ class MetadataController < ApplicationController
   def app_association_android
     raise Discourse::NotFound unless SiteSetting.app_association_android.present?
     expires_in 1.minutes
-    render plain: SiteSetting.app_association_android, content_type: 'application/json'
+    render plain: SiteSetting.app_association_android, content_type: "application/json"
   end
 
   def app_association_ios
     raise Discourse::NotFound unless SiteSetting.app_association_ios.present?
     expires_in 1.minutes
-    render plain: SiteSetting.app_association_ios, content_type: 'application/json'
+    render plain: SiteSetting.app_association_ios, content_type: "application/json"
   end
 
   private
@@ -38,18 +38,17 @@ class MetadataController < ApplicationController
     end
 
     scheme_id = view_context.scheme_id
-    primary_color = ColorScheme.hex_for_name('primary', scheme_id)
+    primary_color = ColorScheme.hex_for_name("primary", scheme_id)
     icon_url_base = UrlHelper.absolute("/svg-sprite/#{Discourse.current_hostname}/icon/#{primary_color}")
 
     manifest = {
       name: SiteSetting.title,
-      short_name: SiteSetting.short_title.presence || SiteSetting.title.truncate(12, separator: ' ', omission: ''),
+      short_name: SiteSetting.short_title.presence || SiteSetting.title.truncate(12, separator: " ", omission: ""),
       display: display,
-      start_url: Discourse.base_uri.present? ? "#{Discourse.base_uri}/" : '.',
-      background_color: "##{ColorScheme.hex_for_name('secondary', scheme_id)}",
-      theme_color: "##{ColorScheme.hex_for_name('header_background', scheme_id)}",
-      icons: [
-      ],
+      start_url: Discourse.base_uri.present? ? "#{Discourse.base_uri}/" : ".",
+      background_color: "##{ColorScheme.hex_for_name("secondary", scheme_id)}",
+      theme_color: "##{ColorScheme.hex_for_name("header_background", scheme_id)}",
+      icons: [],
       share_target: {
         action: "/new-topic",
         method: "GET",
@@ -61,8 +60,8 @@ class MetadataController < ApplicationController
       },
       shortcuts: [
         {
-          name: I18n.t('js.topic.create_long'),
-          short_name: I18n.t('js.topic.create'),
+          name: I18n.t("js.topic.create_long"),
+          short_name: I18n.t("js.topic.create"),
           url: "/new-topic",
           icons: [
             {
@@ -73,8 +72,8 @@ class MetadataController < ApplicationController
           ]
         },
         {
-          name: I18n.t('js.user.messages.inbox'),
-          short_name: I18n.t('js.user.messages.inbox'),
+          name: I18n.t("js.user.messages.inbox"),
+          short_name: I18n.t("js.user.messages.inbox"),
           url: "/my/messages",
           icons: [
             {
@@ -85,8 +84,8 @@ class MetadataController < ApplicationController
           ]
         },
         {
-          name: I18n.t('js.user.bookmarks'),
-          short_name: I18n.t('js.user.bookmarks'),
+          name: I18n.t("js.user.bookmarks"),
+          short_name: I18n.t("js.user.bookmarks"),
           url: "/my/bookmarks",
           icons: [
             {
@@ -97,8 +96,8 @@ class MetadataController < ApplicationController
           ]
         },
         {
-          name: I18n.t('js.filters.top.title'),
-          short_name: I18n.t('js.filters.top.title'),
+          name: I18n.t("js.filters.top.title"),
+          short_name: I18n.t("js.filters.top.title"),
           url: "/top",
           icons: [
             {
@@ -137,5 +136,4 @@ class MetadataController < ApplicationController
 
     manifest
   end
-
 end

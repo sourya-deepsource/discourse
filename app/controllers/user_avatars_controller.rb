@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class UserAvatarsController < ApplicationController
-
   skip_before_action :preload_json, :redirect_to_login_if_required, :check_xhr, :verify_authenticity_token, only: [:show, :show_letter, :show_proxy_letter]
 
   def refresh_gravatar
@@ -35,7 +34,7 @@ class UserAvatarsController < ApplicationController
   def show_proxy_letter
     is_asset_path
 
-    if SiteSetting.external_system_avatars_url !~ /^\/letter_avatar_proxy/
+    unless /^\/letter_avatar_proxy/.match?(SiteSetting.external_system_avatars_url)
       raise Discourse::NotFound
     end
 
@@ -45,11 +44,9 @@ class UserAvatarsController < ApplicationController
     params.require(:size)
 
     hijack do
-      begin
-        proxy_avatar("https://avatars.discourse.org/#{params[:version]}/letter/#{params[:letter]}/#{params[:color]}/#{params[:size]}.png", Time.new('1990-01-01'))
-      rescue OpenURI::HTTPError
-        render_blank
-      end
+      proxy_avatar("https://avatars.discourse.org/#{params[:version]}/letter/#{params[:letter]}/#{params[:color]}/#{params[:size]}.png", Time.new("1990-01-01"))
+    rescue OpenURI::HTTPError
+      render_blank
     end
   end
 
@@ -88,7 +85,6 @@ class UserAvatarsController < ApplicationController
   protected
 
   def show_in_site(hostname)
-
     username = params[:username].to_s
     return render_blank unless user = User.find_by(username_lower: username.downcase)
 
@@ -122,7 +118,7 @@ class UserAvatarsController < ApplicationController
     elsif upload && optimized = get_optimized_image(upload, size)
       if optimized.local?
         optimized_path = Discourse.store.path_for(optimized)
-        image = optimized_path if File.exists?(optimized_path)
+        image = optimized_path if File.exist?(optimized_path)
       else
         return proxy_avatar(Discourse.store.cdn_url(optimized.url), upload.created_at)
       end
@@ -142,7 +138,6 @@ class UserAvatarsController < ApplicationController
 
   PROXY_PATH = Rails.root + "tmp/avatar_proxy"
   def proxy_avatar(url, last_modified)
-
     if url[0..1] == "//"
       url = (SiteSetting.force_https ? "https:" : "http:") + url
     end
@@ -176,7 +171,7 @@ class UserAvatarsController < ApplicationController
   def render_blank
     path = Rails.root + "public/images/avatar.png"
     expires_in 10.minutes, public: true
-    response.headers["Last-Modified"] = Time.new('1990-01-01').httpdate
+    response.headers["Last-Modified"] = Time.new("1990-01-01").httpdate
     response.headers["Content-Length"] = File.size(path).to_s
     send_file path, disposition: nil
   end
@@ -186,11 +181,10 @@ class UserAvatarsController < ApplicationController
   # consider removal of hacks some time in 2019
 
   def get_optimized_image(upload, size)
-    return if !upload
+    return unless upload
     return upload if upload.extension == "svg"
 
     upload.get_optimized_image(size, size, allow_animation: SiteSetting.allow_animated_avatars)
     # TODO decide if we want to detach here
   end
-
 end

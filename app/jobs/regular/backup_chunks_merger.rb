@@ -1,18 +1,17 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class BackupChunksMerger < ::Jobs::Base
-    sidekiq_options queue: 'critical', retry: false
+    sidekiq_options queue: "critical", retry: false
 
     def execute(args)
-      filename   = args[:filename]
+      filename = args[:filename]
       identifier = args[:identifier]
-      chunks     = args[:chunks].to_i
+      chunks = args[:chunks].to_i
 
-      raise Discourse::InvalidParameters.new(:filename)   if filename.blank?
+      raise Discourse::InvalidParameters.new(:filename) if filename.blank?
       raise Discourse::InvalidParameters.new(:identifier) if identifier.blank?
-      raise Discourse::InvalidParameters.new(:chunks)     if chunks <= 0
+      raise Discourse::InvalidParameters.new(:chunks) if chunks <= 0
 
       backup_path = "#{BackupRestore::LocalBackupStore.base_directory}/#{filename}"
       tmp_backup_path = "#{backup_path}.tmp"
@@ -34,7 +33,5 @@ module Jobs
       data = ActiveModel::ArraySerializer.new(store.files, each_serializer: BackupFileSerializer).as_json
       MessageBus.publish("/admin/backups", data, group_ids: [Group::AUTO_GROUPS[:staff]])
     end
-
   end
-
 end

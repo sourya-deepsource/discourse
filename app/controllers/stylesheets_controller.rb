@@ -16,7 +16,6 @@ class StylesheetsController < ApplicationController
   protected
 
   def show_resource(source_map: false)
-
     extension = source_map ? ".css.map" : ".css"
 
     params[:name]
@@ -25,7 +24,7 @@ class StylesheetsController < ApplicationController
 
     target, digest = params[:name].split(/_([a-f0-9]{40})/)
 
-    if !Rails.env.production?
+    unless Rails.env.production?
       # TODO add theme
       # calling this method ensures we have a cache for said target
       # we hold of re-compilation till someone asks for asset
@@ -54,10 +53,10 @@ class StylesheetsController < ApplicationController
     end
 
     query = StylesheetCache.where(target: target)
-    if digest
-      query = query.where(digest: digest)
+    query = if digest
+      query.where(digest: digest)
     else
-      query = query.order('id desc')
+      query.order("id desc")
     end
 
     # Security note, safe due to route constraint
@@ -68,7 +67,7 @@ class StylesheetsController < ApplicationController
 
     stylesheet_time = query.pluck_first(:created_at)
 
-    if !stylesheet_time
+    unless stylesheet_time
       handle_missing_cache(location, target, digest)
     end
 
@@ -86,10 +85,10 @@ class StylesheetsController < ApplicationController
     end
 
     if Rails.env == "development"
-      response.headers['Last-Modified'] = Time.zone.now.httpdate
+      response.headers["Last-Modified"] = Time.zone.now.httpdate
       immutable_for(1.second)
     else
-      response.headers['Last-Modified'] = stylesheet_time.httpdate if stylesheet_time
+      response.headers["Last-Modified"] = stylesheet_time.httpdate if stylesheet_time
       immutable_for(1.year)
     end
     send_file(location, disposition: :inline)
@@ -109,10 +108,7 @@ class StylesheetsController < ApplicationController
   private
 
   def read_file(location)
-    begin
-      File.read(location)
-    rescue Errno::ENOENT
-    end
+    File.read(location)
+  rescue Errno::ENOENT
   end
-
 end

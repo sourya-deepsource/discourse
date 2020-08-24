@@ -5,7 +5,7 @@ class CategoryList < DraftableList
   self.preloaded_topic_custom_fields = Set.new
 
   attr_accessor :categories,
-                :uncategorized
+    :uncategorized
 
   def initialize(guardian = nil, options = {})
     @guardian = guardian || Guardian.new
@@ -46,10 +46,10 @@ class CategoryList < DraftableList
     else
       allowed_category_ids = categories.pluck(:id) << nil # `nil` is necessary to include categories without any associated topics
       categories.left_outer_joins(:featured_topics)
-        .where(topics: { category_id: allowed_category_ids })
-        .group('categories.id')
+        .where(topics: {category_id: allowed_category_ids})
+        .group("categories.id")
         .order("max(topics.bumped_at) DESC NULLS LAST")
-        .order('categories.id ASC')
+        .order("categories.id ASC")
     end
   end
 
@@ -172,5 +172,4 @@ class CategoryList < DraftableList
       c.displayable_topics = c.displayable_topics[0, c.num_featured_topics]
     end
   end
-
 end

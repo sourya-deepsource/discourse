@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class UsersEmailController < ApplicationController
-
   requires_login only: [:index, :update]
 
   skip_before_action :check_xhr, only: [
@@ -29,7 +28,7 @@ class UsersEmailController < ApplicationController
   end
 
   def create
-    if !SiteSetting.enable_secondary_emails
+    unless SiteSetting.enable_secondary_emails
       return render json: failed_json, status: 410
     end
 
@@ -81,7 +80,7 @@ class UsersEmailController < ApplicationController
 
     RateLimiter.new(nil, "second-factor-min-#{request.remote_ip}", 3, 1.minute).performed! if params[:second_factor_token].present?
 
-    if !@error
+    unless @error
       # this is needed becase the form posts this field as JSON and it can be a
       # hash when authenticating security key.
       if params[:second_factor_method].to_i == UserSecondFactor.methods[:security_key]
@@ -93,7 +92,7 @@ class UsersEmailController < ApplicationController
       end
 
       second_factor_authentication_result = @user.authenticate_second_factor(params, secure_session)
-      if !second_factor_authentication_result.ok
+      unless second_factor_authentication_result.ok
         flash[:invalid_second_factor] = true
         flash[:invalid_second_factor_message] = second_factor_authentication_result.error
         redirect_to redirect_url
@@ -101,7 +100,7 @@ class UsersEmailController < ApplicationController
       end
     end
 
-    if !@error
+    unless @error
       updater = EmailUpdater.new
       if updater.confirm(params[:token]) == :complete
         updater.user.user_stat.reset_bounce_score!
@@ -132,7 +131,7 @@ class UsersEmailController < ApplicationController
     @show_invalid_second_factor_error = flash[:invalid_second_factor]
     @invalid_second_factor_message = flash[:invalid_second_factor_message]
 
-    if !@error
+    unless @error
       @backup_codes_enabled = @user.backup_codes_enabled?
       if params[:show_backup].to_s == "true" && @backup_codes_enabled
         @show_backup_codes = true
@@ -142,7 +141,7 @@ class UsersEmailController < ApplicationController
         end
         if @user.security_keys_enabled?
           Webauthn.stage_challenge(@user, secure_session)
-          @show_security_key = params[:show_totp].to_s == "true" ? false : true
+          @show_security_key = !(params[:show_totp].to_s == "true")
           @security_key_challenge = Webauthn.challenge(@user, secure_session)
           @security_key_allowed_credential_ids = Webauthn.allowed_credentials(@user, secure_session)[:allowed_credential_ids]
         end
@@ -151,7 +150,7 @@ class UsersEmailController < ApplicationController
       @to_email = @change_request.new_email
     end
 
-    render layout: 'no_ember'
+    render layout: "no_ember"
   end
 
   def confirm_old_email
@@ -163,7 +162,7 @@ class UsersEmailController < ApplicationController
 
     redirect_url = path("/u/confirm-old-email/#{params[:token]}")
 
-    if !@error
+    unless @error
       updater = EmailUpdater.new
       if updater.confirm(params[:token]) != :authorizing_new
         @error = I18n.t("change_email.already_done")
@@ -189,12 +188,12 @@ class UsersEmailController < ApplicationController
       @almost_done = true
     end
 
-    if !@error
+    unless @error
       @from_email = @user.email
       @to_email = @change_request.new_email
     end
 
-    render layout: 'no_ember'
+    render layout: "no_ember"
   end
 
   private
@@ -214,19 +213,18 @@ class UsersEmailController < ApplicationController
 
     @user = @token&.user
 
-    if (!@user || !@change_request)
+    if !@user || !@change_request
       @error = I18n.t("change_email.already_done")
     end
 
     if current_user.id != @user&.id
-      @error = I18n.t 'change_email.wrong_account_error'
+      @error = I18n.t "change_email.wrong_account_error"
     end
   end
 
   def require_login
-    if !current_user
+    unless current_user
       redirect_to_login
     end
   end
-
 end

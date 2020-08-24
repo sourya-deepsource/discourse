@@ -6,9 +6,9 @@ module Jobs
 
     def initialize
       super
-      @logs    = []
-      @sent    = 0
-      @failed  = 0
+      @logs = []
+      @sent = 0
+      @failed = 0
       @groups = {}
       @valid_groups = {}
     end
@@ -35,7 +35,7 @@ module Jobs
 
     def process_invites(invites)
       invites.each do |invite|
-        if (EmailValidator.email_regex =~ invite[:email])
+        if EmailValidator.email_regex&.match?(invite[:email])
           # email is valid
           send_invite(invite)
           @sent += 1
@@ -54,9 +54,9 @@ module Jobs
       groups = []
 
       if group_names
-        group_names = group_names.split(';')
+        group_names = group_names.split(";")
 
-        group_names.each { |group_name|
+        group_names.each do |group_name|
           group = fetch_group(group_name)
 
           if group && can_edit_group?(group)
@@ -67,7 +67,7 @@ module Jobs
             save_log "Invalid Group '#{group_name}'"
             @failed += 1
           end
-        }
+        end
       end
 
       groups
@@ -110,8 +110,7 @@ module Jobs
             invite = Invite.create_invite_by_email(email, @current_user,
               topic: topic,
               group_ids: groups.map(&:id),
-              emailed_status: Invite.emailed_status_types[:bulk_pending]
-            )
+              emailed_status: Invite.emailed_status_types[:bulk_pending])
           else
             Invite.invite_by_email(email, @current_user, topic, groups.map(&:id))
           end
@@ -129,7 +128,7 @@ module Jobs
 
     def notify_user
       if @current_user
-        if (@sent > 0 && @failed == 0)
+        if @sent > 0 && @failed == 0
           SystemMessage.create_from_system_user(
             @current_user,
             :bulk_invite_succeeded,

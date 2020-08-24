@@ -11,7 +11,7 @@ class InlineOneboxController < ApplicationController
         category_id: params[:category_id].to_i,
         topic_id: params[:topic_id].to_i
       ).process
-      render json: { "inline-oneboxes" => oneboxes }
+      render json: {"inline-oneboxes" => oneboxes}
     end
   end
 end

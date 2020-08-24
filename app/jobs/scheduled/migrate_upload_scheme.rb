@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class MigrateUploadScheme < ::Jobs::Scheduled
     every 10.minutes
     sidekiq_options retry: false
@@ -13,7 +12,6 @@ module Jobs
       Upload.where("created_at < ?", 1.hour.ago)
         .where("LENGTH(COALESCE(url, '')) = 0")
         .find_each do |upload|
-
         upload.destroy!
       end
 
@@ -29,7 +27,6 @@ module Jobs
       OptimizedImage
         .where("LENGTH(COALESCE(url, '')) = 0")
         .find_each do |optimized_image|
-
         optimized_image.destroy!
       end
 
@@ -38,7 +35,6 @@ module Jobs
         .joins("LEFT JOIN uploads ON optimized_images.upload_id = uploads.id")
         .where("uploads.id IS NULL")
         .find_each do |optimized_image|
-
         optimized_image.destroy!
       end
 
@@ -48,13 +44,10 @@ module Jobs
         .where("uploads.url LIKE '%/original/_X/%'")
         .limit(50)
         .find_each do |optimized_image|
-
         upload = optimized_image.upload
         optimized_image.destroy!
         upload.rebake_posts_on_old_scheme
       end
     end
-
   end
-
 end

@@ -70,11 +70,11 @@ class Badge < ActiveRecord::Base
   attr_accessor :has_badge
 
   def self.trigger_hash
-    Hash[*(
+    Hash[*
       Badge::Trigger.constants.map { |k|
         [k.to_s.underscore, Badge::Trigger.const_get(k)]
       }.flatten
-    )]
+    ]
   end
 
   module Trigger
@@ -167,13 +167,13 @@ class Badge < ActiveRecord::Base
   end
 
   def clear_user_titles!
-    DB.exec(<<~SQL, badge_id: self.id, updated_at: Time.zone.now)
+    DB.exec(<<~SQL, badge_id: id, updated_at: Time.zone.now)
       UPDATE users AS u
       SET title = '', updated_at = :updated_at
       FROM user_profiles AS up
       WHERE up.user_id = u.id AND up.granted_title_badge_id = :badge_id
     SQL
-    DB.exec(<<~SQL, badge_id: self.id)
+    DB.exec(<<~SQL, badge_id: id)
       UPDATE user_profiles AS up
       SET badge_granted_title = false, granted_title_badge_id = NULL
       WHERE up.granted_title_badge_id = :badge_id
@@ -183,7 +183,7 @@ class Badge < ActiveRecord::Base
   ##
   # Update all user titles based on a badge to the new name
   def update_user_titles!(new_title)
-    DB.exec(<<~SQL, granted_title_badge_id: self.id, title: new_title, updated_at: Time.zone.now)
+    DB.exec(<<~SQL, granted_title_badge_id: id, title: new_title, updated_at: Time.zone.now)
       UPDATE users AS u
       SET title = :title, updated_at = :updated_at
       FROM user_profiles AS up
@@ -195,7 +195,7 @@ class Badge < ActiveRecord::Base
   # When a badge has its TranslationOverride cleared, reset
   # all user titles granted to the standard name.
   def reset_user_titles!
-    DB.exec(<<~SQL, granted_title_badge_id: self.id, updated_at: Time.zone.now)
+    DB.exec(<<~SQL, granted_title_badge_id: id, updated_at: Time.zone.now)
       UPDATE users AS u
       SET title = badges.name, updated_at = :updated_at
       FROM user_profiles AS up
@@ -205,7 +205,7 @@ class Badge < ActiveRecord::Base
   end
 
   def self.i18n_name(name)
-    name.downcase.tr(' ', '_')
+    name.downcase.tr(" ", "_")
   end
 
   def self.display_name(name)
@@ -217,8 +217,8 @@ class Badge < ActiveRecord::Base
   end
 
   def self.find_system_badge_id_from_translation_key(translation_key)
-    return unless translation_key.starts_with?('badges.')
-    badge_name_klass = translation_key.split('.').second.camelize
+    return unless translation_key.starts_with?("badges.")
+    badge_name_klass = translation_key.split(".").second.camelize
     Badge.const_defined?(badge_name_klass) ? "Badge::#{badge_name_klass}".constantize : nil
   end
 
@@ -232,11 +232,11 @@ class Badge < ActiveRecord::Base
   end
 
   def single_grant?
-    !self.multiple_grant?
+    !multiple_grant?
   end
 
   def default_icon=(val)
-    unless self.image
+    unless image
       self.icon ||= val
       self.icon = val if self.icon == "fa-certificate"
     end
@@ -248,7 +248,7 @@ class Badge < ActiveRecord::Base
 
   def default_badge_grouping_id=(val)
     # allow to correct orphans
-    if !self.badge_grouping_id || self.badge_grouping_id <= BadgeGrouping::Other
+    if !badge_grouping_id || badge_grouping_id <= BadgeGrouping::Other
       self.badge_grouping_id = val
     end
   end
@@ -263,7 +263,7 @@ class Badge < ActiveRecord::Base
 
   def long_description
     key = "badges.#{i18n_name}.long_description"
-    I18n.t(key, default: self[:long_description] || '', base_uri: Discourse.base_uri, max_likes_per_day: SiteSetting.max_likes_per_day)
+    I18n.t(key, default: self[:long_description] || "", base_uri: Discourse.base_uri, max_likes_per_day: SiteSetting.max_likes_per_day)
   end
 
   def long_description=(val)
@@ -273,7 +273,7 @@ class Badge < ActiveRecord::Base
 
   def description
     key = "badges.#{i18n_name}.description"
-    I18n.t(key, default: self[:description] || '', base_uri: Discourse.base_uri, max_likes_per_day: SiteSetting.max_likes_per_day)
+    I18n.t(key, default: self[:description] || "", base_uri: Discourse.base_uri, max_likes_per_day: SiteSetting.max_likes_per_day)
   end
 
   def description=(val)
@@ -282,7 +282,7 @@ class Badge < ActiveRecord::Base
   end
 
   def slug
-    Slug.for(self.display_name, '-')
+    Slug.for(display_name, "-")
   end
 
   def manually_grantable?

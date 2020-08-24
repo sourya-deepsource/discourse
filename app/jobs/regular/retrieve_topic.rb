@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
 module Jobs
-
   # Asynchronously retrieve a topic from an embedded site
   class RetrieveTopic < ::Jobs::Base
-
     def execute(args)
       raise Discourse::InvalidParameters.new(:embed_url) unless args[:embed_url].present?
 
@@ -14,7 +12,5 @@ module Jobs
       end
       TopicRetriever.new(args[:embed_url], author_username: args[:author_username], no_throttle: user.try(:staff?)).retrieve
     end
-
   end
-
 end

@@ -8,7 +8,7 @@ module Jobs
       Notification.where(topic_id: args[:topic_id]).find_each do |notification|
         next unless notification.user && notification.topic
 
-        if !Guardian.new(notification.user).can_see?(notification.topic)
+        unless Guardian.new(notification.user).can_see?(notification.topic)
           notification.destroy
         end
       end

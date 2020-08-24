@@ -1,28 +1,27 @@
 # frozen_string_literal: true
 
 class Admin::SiteTextsController < Admin::AdminController
-
   def self.preferred_keys
-    ['system_messages.usage_tips.text_body_template',
-     'education.new-topic',
-     'education.new-reply',
-     'login_required.welcome_message']
+    ["system_messages.usage_tips.text_body_template",
+      "education.new-topic",
+      "education.new-reply",
+      "login_required.welcome_message"]
   end
 
   def self.restricted_keys
-    ['user_notifications.confirm_old_email.title',
-     'user_notifications.confirm_old_email.subject_template',
-     'user_notifications.confirm_old_email.text_body_template']
+    ["user_notifications.confirm_old_email.title",
+      "user_notifications.confirm_old_email.subject_template",
+      "user_notifications.confirm_old_email.text_body_template"]
   end
 
   def index
-    overridden = params[:overridden] == 'true'
+    overridden = params[:overridden] == "true"
     extras = {}
 
     query = params[:q] || ""
 
     locale = params[:locale] || I18n.locale
-    raise Discourse::InvalidParameters.new(:locale) if !I18n.locale_available?(locale)
+    raise Discourse::InvalidParameters.new(:locale) unless I18n.locale_available?(locale)
 
     if query.blank? && !overridden
       extras[:recommended] = true
@@ -53,12 +52,12 @@ class Admin::SiteTextsController < Admin::AdminController
     last = first + per_page
 
     extras[:has_more] = true if results.size > last
-    render_serialized(results[first..last - 1], SiteTextSerializer, root: 'site_texts', rest_serializer: true, extras: extras, overridden_keys: overridden_keys)
+    render_serialized(results[first..last - 1], SiteTextSerializer, root: "site_texts", rest_serializer: true, extras: extras, overridden_keys: overridden_keys)
   end
 
   def show
     site_text = find_site_text
-    render_serialized(site_text, SiteTextSerializer, root: 'site_text', rest_serializer: true)
+    render_serialized(site_text, SiteTextSerializer, root: "site_text", rest_serializer: true)
   end
 
   def update
@@ -79,7 +78,7 @@ class Admin::SiteTextsController < Admin::AdminController
           action: Jobs::BulkUserTitleUpdate::UPDATE_ACTION
         )
       end
-      render_serialized(site_text, SiteTextSerializer, root: 'site_text', rest_serializer: true)
+      render_serialized(site_text, SiteTextSerializer, root: "site_text", rest_serializer: true)
     else
       render json: failed_json.merge(
         message: translation_override.errors.full_messages.join("\n\n")
@@ -102,7 +101,7 @@ class Admin::SiteTextsController < Admin::AdminController
         action: Jobs::BulkUserTitleUpdate::RESET_ACTION
       )
     end
-    render_serialized(site_text, SiteTextSerializer, root: 'site_text', rest_serializer: true)
+    render_serialized(site_text, SiteTextSerializer, root: "site_text", rest_serializer: true)
   end
 
   def get_reseed_options
@@ -133,8 +132,8 @@ class Admin::SiteTextsController < Admin::AdminController
   protected
 
   def is_badge_title?(id = "")
-    badge_parts = id.split('.')
-    badge_parts[0] == 'badges' && badge_parts[2] == 'name'
+    badge_parts = id.split(".")
+    badge_parts[0] == "badges" && badge_parts[2] == "name"
   end
 
   def record_for(key, value = nil)
@@ -144,14 +143,14 @@ class Admin::SiteTextsController < Admin::AdminController
     end
 
     value ||= I18n.t(key)
-    { id: key, value: value }
+    {id: key, value: value}
   end
 
   PLURALIZED_REGEX = /(.*)\.(zero|one|two|few|many|other)$/
 
   def find_site_text
     if self.class.restricted_keys.include?(params[:id])
-      raise Discourse::InvalidAccess.new(nil, nil, custom_message: 'email_template_cant_be_modified')
+      raise Discourse::InvalidAccess.new(nil, nil, custom_message: "email_template_cant_be_modified")
     end
 
     if I18n.exists?(params[:id]) || TranslationOverride.exists?(locale: I18n.locale, translation_key: params[:id])
@@ -197,13 +196,13 @@ class Admin::SiteTextsController < Admin::AdminController
 
   def fix_plural_keys(key, value)
     value = value.with_indifferent_access
-    plural_keys = I18n.t('i18n.plural.keys')
+    plural_keys = I18n.t("i18n.plural.keys")
     return value if value.keys.size == plural_keys.size && plural_keys.all? { |k| value.key?(k) }
 
     fallback_value = I18n.t(key, locale: :en, default: {})
-    plural_keys.map do |k|
+    plural_keys.map { |k|
       [k, value[k] || fallback_value[k] || fallback_value[:other]]
-    end.to_h
+    }.to_h
   end
 
   def overridden_keys

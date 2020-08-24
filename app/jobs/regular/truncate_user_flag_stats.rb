@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Jobs::TruncateUserFlagStats < ::Jobs::Base
-
   def self.truncate_to
     100
   end
@@ -17,8 +16,8 @@ class Jobs::TruncateUserFlagStats < ::Jobs::Base
       total = user_stat.flags_agreed + user_stat.flags_disagreed + user_stat.flags_ignored
       next if total < self.class.truncate_to
 
-      params = ReviewableScore.statuses.slice(:agreed, :disagreed, :ignored).
-        merge(user_id: u, truncate_to: self.class.truncate_to)
+      params = ReviewableScore.statuses.slice(:agreed, :disagreed, :ignored)
+        .merge(user_id: u, truncate_to: self.class.truncate_to)
 
       result = DB.query(<<~SQL, params)
         SELECT SUM(CASE WHEN x.status = :agreed THEN 1 ELSE 0 END) AS agreed,
@@ -41,10 +40,8 @@ class Jobs::TruncateUserFlagStats < ::Jobs::Base
       user_stat.update_columns(
         flags_agreed: result[0].agreed || 0,
         flags_disagreed: result[0].disagreed || 0,
-        flags_ignored: result[0].ignored || 0,
+        flags_ignored: result[0].ignored || 0
       )
     end
-
   end
-
 end

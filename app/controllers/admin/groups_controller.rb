@@ -30,7 +30,7 @@ class Admin::GroupsController < Admin::AdminController
     response = success_json.merge(users_not_added: invalid_users)
 
     if users_added > 0
-      response[:message] = I18n.t('groups.success.bulk_add', count: users_added)
+      response[:message] = I18n.t("groups.success.bulk_add", count: users_added)
     end
 
     render json: response
@@ -95,7 +95,7 @@ class Admin::GroupsController < Admin::AdminController
     users.each do |user|
       group_action_logger = GroupActionLogger.new(current_user, group)
 
-      if !group.users.include?(user)
+      unless group.users.include?(user)
         group.add(user)
         group_action_logger.log_add_user_to_group(user)
       end
@@ -146,13 +146,13 @@ class Admin::GroupsController < Admin::AdminController
       user_count = Group.automatic_membership_users(domains.join("|")).count
     end
 
-    render json: { user_count: user_count }
+    render json: {user_count: user_count}
   end
 
   protected
 
   def can_not_modify_automatic
-    render_json_error(I18n.t('groups.errors.can_not_modify_automatic'))
+    render_json_error(I18n.t("groups.errors.can_not_modify_automatic"))
   end
 
   private
@@ -186,7 +186,7 @@ class Admin::GroupsController < Admin::AdminController
       :notify_users
     ]
     custom_fields = DiscoursePluginRegistry.editable_group_custom_fields
-    permitted << { custom_fields: custom_fields } unless custom_fields.blank?
+    permitted << {custom_fields: custom_fields} unless custom_fields.blank?
 
     params.require(:group).permit(permitted)
   end

@@ -15,7 +15,7 @@ class ReviewablesController < ApplicationController
       raise Discourse::InvalidParameter.new(:type) unless Reviewable.valid_type?(params[:type])
     end
 
-    status = (params[:status] || 'pending').to_sym
+    status = (params[:status] || "pending").to_sym
     raise Discourse::InvalidParameter.new(:status) unless allowed_statuses.include?(status)
 
     topic_id = params[:topic_id] ? params[:topic_id].to_i : nil
@@ -52,7 +52,7 @@ class ReviewablesController < ApplicationController
           claimed_topics: claimed_topics
         ).as_json
         hash[:bundled_actions].uniq!
-        (hash['actions'] || []).uniq!
+        (hash["actions"] || []).uniq!
         result
       end,
       meta: filters.merge(
@@ -86,7 +86,7 @@ class ReviewablesController < ApplicationController
     pending.each do |r|
       topic_ids << r.topic_id
 
-      meta = stats[r.topic_id] ||= { count: 0, unique_users: 0 }
+      meta = stats[r.topic_id] ||= {count: 0, unique_users: 0}
       users = unique_users[r.topic_id] ||= Set.new
 
       r.reviewable_scores.each do |rs|
@@ -96,11 +96,11 @@ class ReviewablesController < ApplicationController
       meta[:unique_users] = users.size
     end
 
-    topics = Topic.where(id: topic_ids).order('reviewable_score DESC')
+    topics = Topic.where(id: topic_ids).order("reviewable_score DESC")
     render_serialized(
       topics,
       ReviewableTopicSerializer,
-      root: 'reviewable_topics',
+      root: "reviewable_topics",
       stats: stats,
       claimed_topics: ReviewableClaimedTopic.claimed_hash(topic_ids),
       rest_serializer: true,
@@ -114,10 +114,10 @@ class ReviewablesController < ApplicationController
     reviewable = find_reviewable
 
     render_serialized(
-      { reviewable: reviewable, scores: reviewable.explain_score },
+      {reviewable: reviewable, scores: reviewable.explain_score},
       ReviewableExplanationSerializer,
       rest_serializer: true,
-      root: 'reviewable_explanation'
+      root: "reviewable_explanation"
     )
   end
 
@@ -129,7 +129,7 @@ class ReviewablesController < ApplicationController
       reviewable.serializer,
       rest_serializer: true,
       claimed_topics: ReviewableClaimedTopic.claimed_hash([reviewable.topic_id]),
-      root: 'reviewable',
+      root: "reviewable",
       meta: {
         types: meta_types
       }
@@ -174,12 +174,12 @@ class ReviewablesController < ApplicationController
         render_json_error(reviewable.errors)
       end
     rescue Reviewable::UpdateConflict
-      render_json_error(I18n.t('reviewables.conflict'), status: 409)
+      render_json_error(I18n.t("reviewables.conflict"), status: 409)
     end
   end
 
   def perform
-    args = { version: params[:version].to_i }
+    args = {version: params[:version].to_i}
 
     result = nil
     begin
@@ -194,7 +194,7 @@ class ReviewablesController < ApplicationController
       # Consider InvalidAction an InvalidAccess
       raise Discourse::InvalidAccess.new(e.message)
     rescue Reviewable::UpdateConflict
-      return render_json_error(I18n.t('reviewables.conflict'), status: 409)
+      return render_json_error(I18n.t("reviewables.conflict"), status: 409)
     end
 
     if result.success?
@@ -207,7 +207,7 @@ class ReviewablesController < ApplicationController
   def settings
     raise Discourse::InvalidAccess.new unless current_user.admin?
 
-    post_action_types = PostActionType.where(id: PostActionType.flag_types.values).order('id')
+    post_action_types = PostActionType.where(id: PostActionType.flag_types.values).order("id")
 
     if request.put?
       params[:reviewable_priorities].each do |id, priority|
@@ -222,11 +222,11 @@ class ReviewablesController < ApplicationController
       end
     end
 
-    data = { reviewable_score_types: post_action_types }
+    data = {reviewable_score_types: post_action_types}
     render_serialized(data, ReviewableSettingsSerializer, rest_serializer: true)
   end
 
-protected
+  protected
 
   def claim_error?(reviewable)
     return if SiteSetting.reviewable_claiming == "disabled" || reviewable.topic_id.blank?
@@ -234,9 +234,9 @@ protected
     claimed_by_id = ReviewableClaimedTopic.where(topic_id: reviewable.topic_id).pluck(:user_id)[0]
 
     if SiteSetting.reviewable_claiming == "required" && claimed_by_id.blank?
-      I18n.t('reviewables.must_claim')
+      I18n.t("reviewables.must_claim")
     elsif claimed_by_id.present? && claimed_by_id != current_user.id
-      I18n.t('reviewables.user_claimed')
+      I18n.t("reviewables.user_claimed")
     end
   end
 
@@ -252,16 +252,16 @@ protected
 
   def version_required
     if params[:version].blank?
-      render_json_error(I18n.t('reviewables.missing_version'), status: 422)
+      render_json_error(I18n.t("reviewables.missing_version"), status: 422)
     end
   end
 
   def meta_types
     {
-      created_by: 'user',
-      target_created_by: 'user',
-      reviewed_by: 'user',
-      claimed_by: 'user'
+      created_by: "user",
+      target_created_by: "user",
+      reviewed_by: "user",
+      claimed_by: "user"
     }
   end
 

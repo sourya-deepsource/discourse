@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class CleanUpUnmatchedEmails < ::Jobs::Scheduled
     every 1.day
 
@@ -12,7 +11,5 @@ module Jobs
         .where("last_match_at < ?", last_match_threshold)
         .destroy_all
     end
-
   end
-
 end

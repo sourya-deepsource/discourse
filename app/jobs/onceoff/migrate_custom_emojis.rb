@@ -12,13 +12,13 @@ module Jobs
           upload = UploadCreator.new(
             file,
             File.basename(path),
-            type: 'custom_emoji'
+            type: "custom_emoji"
           ).create_for(Discourse.system_user.id)
 
           if upload.persisted?
             custom_emoji = CustomEmoji.new(name: name, upload: upload)
 
-            if !custom_emoji.save
+            unless custom_emoji.save
               warn("Failed to create custom emoji '#{name}': #{custom_emoji.errors.full_messages}")
             end
           else

@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 module Jobs
-
   class PullHotlinkedImages < ::Jobs::Base
-    sidekiq_options queue: 'low'
+    sidekiq_options queue: "low"
 
     def initialize
       @max_size = SiteSetting.max_image_size_kb.kilobytes
@@ -30,15 +29,15 @@ module Jobs
       downloaded_image_ids.each { |url, id| downloaded_images[url] = upload_records[id] }
 
       extract_images_from(post.cooked).each do |node|
-        download_src = original_src = node['src'] || node['href']
+        download_src = original_src = node["src"] || node["href"]
         download_src = "#{SiteSetting.force_https ? "https" : "http"}:#{original_src}" if original_src.start_with?("//")
         normalized_src = normalize_src(download_src)
 
-        next if !should_download_image?(download_src, post)
+        next unless should_download_image?(download_src, post)
 
         begin
           already_attempted_download = downloaded_images.include?(normalized_src) || large_image_urls.include?(normalized_src) || broken_image_urls.include?(normalized_src)
-          if !already_attempted_download
+          unless already_attempted_download
             downloaded_images[normalized_src] = attempt_download(download_src, post.user_id)
           end
         rescue ImageTooLargeError
@@ -68,7 +67,7 @@ module Jobs
       post.custom_fields[Post::DOWNLOADED_IMAGES] = downloaded_image_ids
 
       [Post::LARGE_IMAGES, Post::BROKEN_IMAGES, Post::DOWNLOADED_IMAGES].each do |key|
-        post.custom_fields.delete(key) if !post.custom_fields[key].present?
+        post.custom_fields.delete(key) unless post.custom_fields[key].present?
       end
 
       custom_fields_updated = !post.custom_fields_clean?
@@ -82,7 +81,7 @@ module Jobs
       raw_changed_here = (raw != post.raw)
 
       if !post_changed_elsewhere && raw_changed_here
-        changes = { raw: raw, edit_reason: I18n.t("upload.edit_reason") }
+        changes = {raw: raw, edit_reason: I18n.t("upload.edit_reason")}
         post.revise(Discourse.system_user, changes, bypass_bump: true, skip_staff_log: true)
       elsif custom_fields_updated
         post.trigger_post_process(
@@ -124,7 +123,7 @@ module Jobs
       src = Upload.signed_url_from_secure_media_url(src) if Upload.secure_media_url?(src)
 
       hotlinked = download(src)
-      raise ImageBrokenError if !hotlinked
+      raise ImageBrokenError unless hotlinked
       raise ImageTooLargeError if File.size(hotlinked.path) > @max_size
 
       filename = File.basename(URI.parse(src).path)
@@ -179,7 +178,7 @@ module Jobs
     end
 
     def extract_images_from(html)
-      doc = Nokogiri::HTML5::fragment(html)
+      doc = Nokogiri::HTML5.fragment(html)
 
       doc.css("img[src], a.lightbox[href]") -
         doc.css("img.avatar") -
@@ -192,11 +191,11 @@ module Jobs
 
       local_bases = [
         Discourse.base_url,
-        Discourse.asset_host,
+        Discourse.asset_host
       ].compact.map { |s| normalize_src(s) }
 
       if Discourse.store.has_been_uploaded?(src) || normalize_src(src).start_with?(*local_bases) || src =~ /\A\/[^\/]/i
-        return false if !(src =~ /\/uploads\// || Upload.secure_media_url?(src))
+        return false unless src =~ /\/uploads\// || Upload.secure_media_url?(src)
 
         # Someone could hotlink a file from a different site on the same CDN,
         # so check whether we have it in this database
@@ -246,5 +245,4 @@ module Jobs
       src
     end
   end
-
 end

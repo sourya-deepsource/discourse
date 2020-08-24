@@ -28,7 +28,5 @@ class DraftsController < ApplicationController
       drafts: stream ? serialize_data(stream, DraftSerializer) : [],
       no_results_help: I18n.t("user_activity.no_drafts.self")
     }
-
   end
-
 end

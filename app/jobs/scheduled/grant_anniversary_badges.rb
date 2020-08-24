@@ -39,6 +39,5 @@ module Jobs
         BadgeGranter.grant(badge, user, created_at: end_date)
       end
     end
-
   end
 end

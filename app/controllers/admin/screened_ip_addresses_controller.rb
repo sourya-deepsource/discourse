@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::ScreenedIpAddressesController < Admin::AdminController
-
   before_action :fetch_screened_ip_address, only: [:update, :destroy]
 
   def index
@@ -10,7 +9,7 @@ class Admin::ScreenedIpAddressesController < Admin::AdminController
 
     screened_ip_addresses = ScreenedIpAddress
     screened_ip_addresses = screened_ip_addresses.where("cidr :filter >>= ip_address", filter: filter) if filter.present?
-    screened_ip_addresses = screened_ip_addresses.limit(200).order('match_count desc')
+    screened_ip_addresses = screened_ip_addresses.limit(200).order("match_count desc")
 
     begin
       screened_ip_addresses = screened_ip_addresses.to_a
@@ -59,5 +58,4 @@ class Admin::ScreenedIpAddressesController < Admin::AdminController
   def fetch_screened_ip_address
     @screened_ip_address = ScreenedIpAddress.find(params[:id])
   end
-
 end

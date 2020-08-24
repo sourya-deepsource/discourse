@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-require 'erb'
+require "erb"
 
 module EmailHelper
-
   def mailing_list_topic(topic, post_count)
     render(
       partial: partial_for("mailing_list_post"),
-      locals: { topic: topic, post_count: post_count }
+      locals: {topic: topic, post_count: post_count}
     )
   end
 
@@ -27,8 +26,8 @@ module EmailHelper
 
   def email_html_template
     EmailStyle.new.html
-      .sub('%{email_content}', capture { yield })
-      .gsub('%{html_lang}', html_lang)
+      .sub("%{email_content}", capture { yield })
+      .gsub("%{html_lang}", html_lang)
       .html_safe
   end
 
@@ -45,5 +44,4 @@ module EmailHelper
   def partial_for(name)
     SiteSetting.private_email? ? "email/secure_#{name}" : "email/#{name}"
   end
-
 end

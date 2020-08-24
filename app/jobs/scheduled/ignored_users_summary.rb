@@ -8,7 +8,7 @@ module Jobs
       params = {
         threshold: SiteSetting.ignored_users_count_message_threshold,
         gap_days: SiteSetting.ignored_users_message_gap_days,
-        coalesced_gap_days: SiteSetting.ignored_users_message_gap_days + 1,
+        coalesced_gap_days: SiteSetting.ignored_users_message_gap_days + 1
       }
       user_ids = DB.query_single(<<~SQL, params)
         SELECT ignored_user_id
@@ -35,7 +35,8 @@ module Jobs
         subtype: TopicSubtype.system_message,
         title: title,
         raw: raw,
-        skip_validations: true)
+        skip_validations: true
+      )
       IgnoredUser.where(ignored_user_id: user.id).update_all(summarized_at: Time.zone.now)
     end
   end

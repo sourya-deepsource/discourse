@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
-require 'image_sizer'
+require "image_sizer"
 
 module Jobs
-
   class ProcessPost < ::Jobs::Base
-
     def execute(args)
       DistributedMutex.synchronize("process_post_#{args[:post_id]}", validity: 10.minutes) do
         post = Post.find_by(id: args[:post_id])
@@ -61,5 +59,4 @@ module Jobs
       QuotedPost.extract_from(post)
     end
   end
-
 end
