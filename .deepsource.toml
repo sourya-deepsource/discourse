@@ -1,0 +1,16 @@
+version = 1
+
+test_patterns = [
+    "test/**",
+    "spec/**"
+]
+
+exclude_patterns = ["vendor/**"]
+
+[[analyzers]]
+name = "ruby"
+enabled = true
+
+[[transformers]]
+name = "standardrb"
+enabled = true
